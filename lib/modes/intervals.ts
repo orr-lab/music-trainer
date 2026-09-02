@@ -95,6 +95,7 @@ function reverseQuestions(): Question[] {
 export const intervalsMode: Mode = {
   id: INTERVALS_MODE_ID,
   title: "Intervals",
+  group: "Intervals",
   subtitle: "Mirvachim",
   blurb: "Size in tones and classification, both directions.",
   pool: () => [...forwardQuestions(), ...reverseQuestions()],

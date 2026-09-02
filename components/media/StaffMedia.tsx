@@ -4,8 +4,16 @@ import { useEffect, useRef } from "react";
 
 const WIDTH = 300;
 const HEIGHT = 210;
-/** Leaves room for three ledger lines either side of the staff. */
-const STAVE_Y = 78;
+
+/** Exported so an overlay can share the same coordinate space. */
+export const STAFF_WIDTH = WIDTH;
+export const STAFF_HEIGHT = HEIGHT;
+/**
+ * VexFlow draws the first line about 40px below the stave's y, so this puts the
+ * five lines in the middle of the box with equal room for ledger lines above
+ * and below.
+ */
+const STAVE_Y = 45;
 
 /**
  * VexFlow needs literal colours, so these mirror the tokens in globals.css.
@@ -13,6 +21,7 @@ const STAVE_Y = 78;
  */
 export const STAFF_COLORS = {
   ink: "#f0f0f4",
+  muted: "#8a8a96",
   accent: "#7c5cff",
   success: "#35d07f",
   error: "#ff5a5a",
@@ -41,10 +50,19 @@ export interface StaffGeometry {
 export function StaffMedia({
   clef,
   notes,
+  keySignature,
+  height = HEIGHT,
   onGeometry,
 }: {
   clef: string;
   notes: StaffNote[];
+  /** VexFlow key spec, e.g. "Db" - draws the signature after the clef. */
+  keySignature?: string;
+  /**
+   * Box height. The default leaves room for ledger lines either side; a staff
+   * that cannot have any - a bare key signature - can be shorter.
+   */
+  height?: number;
   onGeometry?: (geometry: StaffGeometry) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -76,7 +94,7 @@ export function StaffMedia({
 
       host.current.innerHTML = "";
       const renderer = new Renderer(host.current, Renderer.Backends.SVG);
-      renderer.resize(WIDTH, HEIGHT);
+      renderer.resize(WIDTH, height);
       const ctx = renderer.getContext();
 
       // The page is near-black; everything VexFlow draws has to be inverted.
@@ -86,13 +104,14 @@ export function StaffMedia({
 
       const stave = new Stave(4, STAVE_Y, WIDTH - 8);
       stave.addClef(clef);
+      if (keySignature) stave.addKeySignature(keySignature);
       stave.setStyle({ fillStyle: ink, strokeStyle: ink });
       stave.setContext(ctx).draw();
 
       report.current?.({
         topLineY: stave.getYForLine(0),
         spacing: stave.getSpacingBetweenLines(),
-        height: HEIGHT,
+        height,
       });
 
       if (drawn.length > 0) {
@@ -121,7 +140,7 @@ export function StaffMedia({
       // Scale to the column width instead of overflowing on a narrow phone.
       const svg = host.current.querySelector("svg");
       if (svg) {
-        svg.setAttribute("viewBox", `0 0 ${WIDTH} ${HEIGHT}`);
+        svg.setAttribute("viewBox", `0 0 ${WIDTH} ${height}`);
         svg.setAttribute("width", "100%");
         svg.setAttribute("height", "100%");
         svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
@@ -131,7 +150,7 @@ export function StaffMedia({
     return () => {
       cancelled = true;
     };
-  }, [clef, signature]);
+  }, [clef, signature, keySignature, height]);
 
   return (
     <div
@@ -139,7 +158,8 @@ export function StaffMedia({
       role="img"
       aria-label={`A ${clef} staff`}
       // Fixed box: the staff must not resize as it loads, or the answers move.
-      className="mx-auto h-[210px] w-full max-w-[300px]"
+      className="mx-auto w-full max-w-[300px]"
+      style={{ height }}
     />
   );
 }

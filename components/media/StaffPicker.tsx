@@ -33,7 +33,8 @@ export function StaffPicker({
   onAnswer,
 }: {
   clef: string;
-  given: string;
+  /** The note already on the staff, if the question supplies one. */
+  given?: string;
   options: ValueOption[];
   value: string | undefined;
   state: "idle" | "correct" | "wrong";
@@ -41,10 +42,11 @@ export function StaffPicker({
   accepted: string[];
   onAnswer: (value: string) => void;
 }) {
-  const givenStep = stepForKey(given);
   const steps = options.map((o) => o.value);
   const min = Math.min(...steps);
   const max = Math.max(...steps);
+  // With nothing on the staff to start from, the arrows begin in the middle.
+  const origin = given ? stepForKey(given) : Math.round((min + max) / 2);
 
   const [pending, setPending] = useState<number | null>(null);
   const geometry = useRef<StaffGeometry | null>(null);
@@ -52,7 +54,7 @@ export function StaffPicker({
 
   const clamp = (step: number) => Math.min(max, Math.max(min, step));
   const move = (delta: number) =>
-    setPending((current) => clamp((current ?? givenStep) + delta));
+    setPending((current) => clamp((current ?? origin) + delta));
 
   // Arrow keys move the note, Enter places it.
   useEffect(() => {
@@ -87,7 +89,7 @@ export function StaffPicker({
   const chosen = value !== undefined ? Number(value) : null;
   const correct = Number(accepted[0]);
 
-  const notes = [{ key: given, color: STAFF_COLORS.ink }];
+  const notes = given ? [{ key: given, color: STAFF_COLORS.ink }] : [];
   if (state === "idle") {
     if (pending !== null) {
       notes.push({ key: keyForStep(pending), color: STAFF_COLORS.accent });

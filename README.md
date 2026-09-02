@@ -4,15 +4,32 @@ Theory drilling for the Israeli 5-unit Bagrut track. Hebrew terms in Latin
 transliteration, dark UI, phone first. No backend, no accounts - everything is
 kept in `localStorage` on the device.
 
-Four drill modes, plus a mixed session that draws from all of them:
+Nine drill modes, plus a mixed session that draws from all of them. Most skills
+are drilled in both directions - reading and writing, naming and placing.
 
-- **Mirvachim** - intervals: size in tones and classification, both directions.
-- **Kriat tavim** - staff reading: name the note, treble and bass, VexFlow.
-- **Bniyat mirvachim** - building intervals: given a note on the staff and an
-  interval, place the other note - above or below - either by putting it on the
-  staff or by naming it.
-- **Ma'agal ha-kvintot** - circle of fifths: signatures, relative minors,
-  moving by fifths, and the order of the accidentals.
+Intervals:
+
+- **Mirvachim** - size in tones and classification, both directions.
+- **Sfirat tonim** - count the distance out on a piano keyboard, key by key:
+  find the key an interval away, or measure the gap between two marked keys.
+- **Bniyat mirvachim** - given a note on the staff and an interval, place the
+  other note, above or below, on the staff or by naming it.
+
+The staff:
+
+- **Kriat tavim** - name the note, treble and bass, drawn with VexFlow.
+- **Ktivat tavim** - the reverse: given a name, put the note on the staff.
+
+Keys and signatures:
+
+- **Ma'agal ha-kvintot** - how many accidentals, which key has them, relative
+  minors both ways, moving by fifths, and the order of the accidentals.
+- **Simanei mafteach** - a real key signature drawn on the staff: name the key,
+  major or minor.
+- **Ktivat simanei mafteach** - the reverse: place every accidental yourself, in
+  order, on the right line.
+- **Nivut ba-ma'agal** - answer by pointing at the circle itself, twelve
+  positions rather than four names.
 
 Plus an interactive circle diagram at `/circle` as an unscored reference, and a
 settings page for naming system, clefs, staff difficulty and answer style.
@@ -45,7 +62,9 @@ again.
 lib/engine/     the generic question engine - knows nothing about music
 lib/data/       drill content, one typed file per subject
 lib/modes/      turns data into questions, one file per mode + registry.ts
-components/     UI, including the VexFlow staff and the circle diagram
+components/     UI
+components/media/   things questions draw: the staff, the piano, the circle,
+                    and the pickers built on them
 app/            routes: / · /drill/[mode] · /circle · /stats · /settings
 scripts/        the data checks behind `npm run verify:data`
 ```
@@ -66,11 +85,19 @@ type, its accepted answers, the answer to show in feedback, and its topic tags.
 - `store.ts` - the single `localStorage`-backed store all components read
 
 Three answer input types exist: `choice` (multiple choice), `value` (discrete
-values - the tone scale, accidental counts, a position on a staff) and `text`
-(free typing, normalized). A `value` input can name a `render` for itself, the
-same way a question can carry `media`: that is how placing a note on the staff
-works without the engine learning what a staff is. A new mode needs a new file
-in `lib/modes/` and one line in `lib/modes/registry.ts`.
+values - the tone scale, accidental counts, a position on a staff, a key on a
+piano) and `text` (free typing, normalized).
+
+A `value` input can name a `render` for itself, the same way a question can
+carry `media`. That is how placing a note on a staff, picking a piano key,
+pointing at the circle and writing a whole key signature all work without the
+engine learning what any of those are: each is one case in
+`components/media/index.tsx` plus one component. An input that collects a
+sequence, as writing a key signature does, submits its options joined by
+commas; the engine still just compares strings.
+
+A new mode needs a new file in `lib/modes/` and one line in
+`lib/modes/registry.ts`.
 
 Repetition: a missed question's selection weight is multiplied by 3, then halved
 by each correct answer until it is back to normal after two. That lives in
@@ -125,6 +152,11 @@ would quietly corrupt a drill:
 - ledger-line counts and staff positions ("2nd space of the bass staff")
 - every built interval spans the right number of semitones *and* the right
   number of letter names, checked independently of how it was generated
+- every key signature's accidentals are the right letters in the right order,
+  and sit on or beside the staff for their clef
+- the semitone counts on the piano match the keys actually marked
+- no staff is drawn blank - a question whose media names neither notes nor a
+  key signature is unanswerable
 - across four settings combinations, every generated question has a unique id,
   a reason, and exactly the intended correct options on offer
 - no note name is accidentally accepted for a different note

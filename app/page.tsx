@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useProgress } from "@/components/useProgress";
 import { accuracy, liveDailyStreak } from "@/lib/engine/progress";
-import { MIXED_MODE_ID, MODES } from "@/lib/modes/registry";
+import { MIXED_MODE_ID, groupedModes } from "@/lib/modes/registry";
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -54,29 +54,34 @@ export default function Home() {
             Everything at once - the one to open daily.
           </span>
         </Link>
-
-        {MODES.map((mode) => {
-          const stat = progress.modes[mode.id];
-          const acc = stat
-            ? Math.round(accuracy(stat.seen, stat.correct) * 100)
-            : 0;
-          return (
-            <Link
-              key={mode.id}
-              href={`/drill/${mode.id}`}
-              className="flex min-h-14 flex-col gap-1 rounded-xl border border-line bg-surface p-4 active:border-accent"
-            >
-              <span className="text-lead">{mode.subtitle}</span>
-              <span className="text-content text-muted">{mode.blurb}</span>
-              <span className="mt-2 text-content text-muted">
-                {ready && stat
-                  ? `${stat.seen} answered · ${acc}% · streak ${stat.currentStreak}`
-                  : "Not started"}
-              </span>
-            </Link>
-          );
-        })}
       </section>
+
+      {groupedModes().map(({ group, modes }) => (
+        <section key={group} className="flex flex-col gap-4">
+          <h2 className="text-content text-muted">{group}</h2>
+          {modes.map((mode) => {
+            const stat = progress.modes[mode.id];
+            const acc = stat
+              ? Math.round(accuracy(stat.seen, stat.correct) * 100)
+              : 0;
+            return (
+              <Link
+                key={mode.id}
+                href={`/drill/${mode.id}`}
+                className="flex min-h-14 flex-col gap-1 rounded-xl border border-line bg-surface p-4 active:border-accent"
+              >
+                <span className="text-lead">{mode.subtitle}</span>
+                <span className="text-content text-muted">{mode.blurb}</span>
+                <span className="mt-2 text-content text-muted">
+                  {ready && stat
+                    ? `${stat.seen} answered · ${acc}% · streak ${stat.currentStreak}`
+                    : "Not started"}
+                </span>
+              </Link>
+            );
+          })}
+        </section>
+      ))}
 
       <nav className="flex flex-col gap-4">
         <SecondaryLink href="/circle">Circle reference</SecondaryLink>

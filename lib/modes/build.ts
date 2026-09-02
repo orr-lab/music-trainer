@@ -46,6 +46,7 @@ function letterRun(
 export const buildMode: Mode = {
   id: BUILD_MODE_ID,
   title: "Building intervals",
+  group: "Intervals",
   subtitle: "Bniyat mirvachim",
   blurb: "Given a note and an interval, place the other note.",
   pool: (raw) => {

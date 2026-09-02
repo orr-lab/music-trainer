@@ -93,6 +93,8 @@ export interface Question {
 export interface Mode {
   id: string;
   title: string;
+  /** Heading this mode is listed under. Purely for finding it in the menu. */
+  group: string;
   /** Transliterated name, shown as the subtitle. */
   subtitle: string;
   blurb: string;

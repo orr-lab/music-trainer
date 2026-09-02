@@ -13,6 +13,9 @@ import { DEFAULT_SETTINGS } from "../lib/engine/settings";
 import { matches } from "../lib/engine/normalize";
 import { selectQuestion } from "../lib/engine/select";
 import { buildMode } from "../lib/modes/build";
+import { semitonesMode } from "../lib/modes/semitones";
+import { writeSignatureMode } from "../lib/modes/write-signature";
+import * as KB from "../lib/data/keyboard";
 import { INTERVALS } from "../lib/data/intervals";
 import { applyResult, emptyProgress } from "../lib/engine/progress";
 import { gradeQuestion } from "../lib/engine/grade";
@@ -137,6 +140,17 @@ for (const settings of settingsMatrix) {
       eq(`${q.id}: belongs to its mode`, q.modeId, mode.id);
       eq(`${q.id}: has a prompt`, q.prompt.length > 0, true);
       eq(`${q.id}: has parts`, q.parts.length > 0, true);
+      // A staff drawn with neither notes nor a key signature is blank, which
+      // makes the question unanswerable - and is easy to cause by renaming a
+      // payload key.
+      if (q.media?.kind === "staff") {
+        eq(
+          `${q.id}: its staff actually draws something`,
+          String(q.media.payload.notes ?? "").length > 0 ||
+            String(q.media.payload.keySignature ?? "").length > 0,
+          true,
+        );
+      }
       eq(`${q.id}: positive weight`, q.weight > 0, true);
 
       for (const part of q.parts) {
@@ -149,9 +163,18 @@ for (const settings of settingsMatrix) {
             part.input.kind === "choice"
               ? part.input.options.map((o) => o.id)
               : part.input.options.map((o) => String(o.value));
+          // A choice answer is one whole option. A value answer is one option,
+          // or - where the renderer collects a sequence, as writing a key
+          // signature does - several of them joined.
           eq(
             `${q.id}/${part.id}: a correct answer is on offer`,
-            offered.some((o) => matches(o, part.accepted)),
+            part.input.kind === "choice"
+              ? offered.some((o) => matches(o, part.accepted))
+              : part.accepted.every((answer) =>
+                  answer
+                    .split(",")
+                    .every((piece) => offered.some((o) => matches(o, [piece]))),
+                ),
             true,
           );
           // Exactly the intended options are correct - no option matches by
@@ -259,12 +282,102 @@ const LETTER_SPAN: Record<string, number[]> = {
   }
 }
 
+// --- Counting semitones ------------------------------------------------------
+{
+  const pool = semitonesMode.pool(DEFAULT_SETTINGS as unknown as ModeSettings);
+  eq("semitone mode produces questions", pool.length > 0, true);
+
+  for (const q of pool) {
+    const part = q.parts[0];
+    if (part.input.kind !== "value") continue;
+
+    if (part.input.render) {
+      // Find the key: the answer must be exactly that many semitones away.
+      const start = Number(part.input.render.payload.start);
+      const target = Number(part.accepted[0]);
+      const interval = INTERVALS.find((i) => i.name === q.prompt);
+      eq(`${q.id}: names a real interval`, interval !== undefined, true);
+      if (!interval) continue;
+      eq(
+        `${q.id}: is ${interval.name} away`,
+        Math.abs(target - start),
+        interval.tones * 2,
+      );
+      eq(
+        `${q.id}: direction matches the prompt`,
+        target > start,
+        (q.promptSub ?? "").startsWith("above"),
+      );
+      eq(
+        `${q.id}: stays on the drawn keyboard`,
+        target >= KB.LOWEST && target <= KB.HIGHEST,
+        true,
+      );
+    } else if (q.media) {
+      // Measure the gap: the tone count must match the two marked keys.
+      const from = Number(q.media.payload.from);
+      const to = Number(q.media.payload.to);
+      eq(
+        `${q.id}: tone count matches the marked keys`,
+        Number(part.accepted[0]),
+        Math.abs(to - from) / 2,
+      );
+    }
+  }
+
+  // A black key really is one semitone above the white key below it.
+  eq("do diez is one above do", KB.isBlack(KB.LOWEST + 1), true);
+  eq("mi has no black key above it", KB.isBlack(KB.LOWEST + 5), false);
+  eq("naming a black key", KB.keyName(KB.LOWEST + 6, "solfege"), "fa diez");
+  eq("naming a white key", KB.keyName(KB.LOWEST + 9, "letters"), "A");
+}
+
+// --- Writing key signatures --------------------------------------------------
+// The positions are checked by their letter names, which is the independent
+// half: three sharps must be F, C and G, wherever those sit on the clef.
+{
+  const pool = writeSignatureMode.pool(DEFAULT_SETTINGS as unknown as ModeSettings);
+  eq("signature writing produces questions", pool.length > 0, true);
+
+  for (const q of pool) {
+    const part = q.parts[0];
+    if (part.input.kind !== "value" || !part.input.render) continue;
+    const clef = String(part.input.render.payload.clef);
+    const key = K.KEYS.find(
+      (k) => K.keyName(k.tonic, "major", "solfege") === q.prompt,
+    );
+    eq(`${q.id}: names a real key`, key !== undefined, true);
+    if (!key) continue;
+
+    const steps = part.accepted[0].split(",").map(Number);
+    eq(`${q.id}: one accidental per count`, steps.length, key.count);
+
+    const expected = K.signature(key).map((t) => t.letter);
+    const actual = steps.map((s) => N.SCALE_ORDER[((s % 7) + 7) % 7]);
+    eq(`${q.id}: the right letters, in order`, actual, expected);
+
+    eq(
+      `${q.id}: every accidental is on or beside the ${clef} staff`,
+      steps.every(
+        (s) =>
+          s >= N.STAFF_LINES[clef as N.Clef].bottom - 2 &&
+          s <= N.STAFF_LINES[clef as N.Clef].top + 2,
+      ),
+      true,
+    );
+  }
+}
+
 // --- Selection ---------------------------------------------------------------
-// A seeded generator, so a failure here is reproducible.
+// A seeded generator, so a failure here is reproducible. mulberry32 rather
+// than a plain LCG: a linear generator correlates badly with a weighted scan
+// over a long pool, and reports dead spots that are its own fault.
 let seed = 12345;
 const rng = () => {
-  seed = (seed * 1103515245 + 12345) % 2147483648;
-  return seed / 2147483648;
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 
 for (const id of [...MODES.map((m) => m.id), MIXED_MODE_ID]) {
@@ -298,6 +411,10 @@ for (const id of [...MODES.map((m) => m.id), MIXED_MODE_ID]) {
 
   eq(`${id}: never repeats a question back to back`, sameId, 0);
   eq(`${id}: never repeats a written prompt back to back`, samePrompt, 0);
+  if (drawn.size !== pool.length) {
+    const missing = pool.filter((q) => !drawn.has(q.id)).map((q) => q.id);
+    console.log(`  ${id} never drew: ${missing.join(", ")}`);
+  }
   eq(`${id}: every question comes up`, drawn.size, pool.length);
 }
 

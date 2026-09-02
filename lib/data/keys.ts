@@ -116,6 +116,60 @@ export function countText(key: KeyRow): string {
   return `${key.count} ${key.kind}`;
 }
 
+/** What VexFlow calls this key, for `stave.addKeySignature`. */
+export function vexKeySpec(key: KeyRow): string {
+  return key.tonic.letter.toUpperCase() + key.tonic.accidental;
+}
+
+/**
+ * Where the accidentals of a signature are written, as diatonic steps
+ * (octave * 7 + letter index). These positions are convention, not free
+ * choice: the sharps and flats of a key signature always sit on exactly these
+ * lines and spaces, in this order.
+ *
+ * Treble is given; bass is the same shapes two octaves lower.
+ */
+const TREBLE_SHARP_STEPS = [
+  38, // F#5, top line
+  35, // C#5, third space
+  39, // G#5, the space above the staff
+  36, // D#5, fourth line
+  33, // A#4, second space
+  37, // E#5, fourth space
+  34, // B#4, third line
+];
+
+const TREBLE_FLAT_STEPS = [
+  34, // Bb4, third line
+  37, // Eb5, fourth space
+  33, // Ab4, second space
+  36, // Db5, fourth line
+  32, // Gb4, second line
+  35, // Cb5, third space
+  31, // Fb4, first space
+];
+
+const BASS_OFFSET = -14;
+
+export function signatureSteps(key: KeyRow, clef: "treble" | "bass"): number[] {
+  if (key.kind === "none") return [];
+  const steps =
+    key.kind === "diezim" ? TREBLE_SHARP_STEPS : TREBLE_FLAT_STEPS;
+  const offset = clef === "bass" ? BASS_OFFSET : 0;
+  return steps.slice(0, key.count).map((s) => s + offset);
+}
+
+/** Every position an accidental of this kind could occupy, in order. */
+export function signatureSlots(
+  kind: SignatureKind,
+  clef: "treble" | "bass",
+): number[] {
+  if (kind === "none") return [];
+  const steps = kind === "diezim" ? TREBLE_SHARP_STEPS : TREBLE_FLAT_STEPS;
+  const offset = clef === "bass" ? BASS_OFFSET : 0;
+  return steps.map((s) => s + offset);
+}
+
 export function keyById(id: string): KeyRow | undefined {
   return KEYS.find((k) => k.id === id);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { CircleOfFifths } from "@/components/CircleOfFifths";
 import { useProgress } from "@/components/useProgress";
 import { readSettings } from "@/lib/engine/settings";
@@ -8,6 +9,7 @@ import { readSettings } from "@/lib/engine/settings";
 export default function CirclePage() {
   const { progress } = useProgress();
   const { naming } = readSettings(progress.settings);
+  const [selected, setSelected] = useState(0);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-8 p-4 py-12">
@@ -23,7 +25,11 @@ export default function CirclePage() {
         </Link>
       </header>
 
-      <CircleOfFifths naming={naming} />
+      <CircleOfFifths
+        naming={naming}
+        selected={selected}
+        onSelect={setSelected}
+      />
     </main>
   );
 }

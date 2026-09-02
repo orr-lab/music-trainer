@@ -17,6 +17,7 @@ export const NOTES_MODE_ID = "notes";
 export const notesMode: Mode = {
   id: NOTES_MODE_ID,
   title: "Staff reading",
+  group: "The staff",
   subtitle: "Kriat tavim",
   blurb: "Name the note on the staff, treble and bass.",
   pool: (raw) => {
@@ -45,7 +46,7 @@ export const notesMode: Mode = {
           id: `notes:${clef}:${pitch.letter}${pitch.octave}`,
           modeId: NOTES_MODE_ID,
           prompt: "Name the note",
-          media: { kind: "staff", payload: { clef, note: vexKey(pitch) } },
+          media: { kind: "staff", payload: { clef, notes: vexKey(pitch) } },
           // Ledger lines are the hard part, so they are worth more.
           weight: 1 + 0.2 * Math.min(ledgers, 3),
           topics: [`${clef} clef`],

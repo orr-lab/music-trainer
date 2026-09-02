@@ -63,6 +63,7 @@ function majorOptions(
 export const keysMode: Mode = {
   id: KEYS_MODE_ID,
   title: "Circle of fifths",
+  group: "Keys and signatures",
   subtitle: "Ma'agal ha-kvintot",
   blurb: "Key signatures, relative minors, and moving by fifths.",
   pool: (raw) => {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   CIRCLE_POSITIONS,
   countText,
@@ -29,11 +28,31 @@ function position(index: number, radius: number) {
   };
 }
 
-export function CircleOfFifths({ naming }: { naming: Naming }) {
-  const [selected, setSelected] = useState(0);
-  const keys = CIRCLE_POSITIONS[selected].ids
-    .map(keyById)
-    .filter((k) => k !== undefined);
+/**
+ * The circle, as a diagram or as a way of answering.
+ *
+ * Controlled: whoever uses it owns the selection. The reference page keeps it
+ * in state; the drill hands it straight to the engine.
+ */
+export function CircleOfFifths({
+  naming,
+  selected,
+  onSelect,
+  showDetail = true,
+  statusFor,
+}: {
+  naming: Naming;
+  selected: number | null;
+  onSelect: (index: number) => void;
+  /** The reference page lists what is at the selected position. */
+  showDetail?: boolean;
+  /** Marks a position right or wrong once an answer has been graded. */
+  statusFor?: (index: number) => "correct" | "wrong" | undefined;
+}) {
+  const keys =
+    selected === null
+      ? []
+      : CIRCLE_POSITIONS[selected].ids.map(keyById).filter((k) => k !== undefined);
 
   return (
     <div className="flex flex-col gap-8">
@@ -65,6 +84,16 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
           const outer = position(i, MAJOR_RADIUS);
           const inner = position(i, MINOR_RADIUS);
           const isSelected = i === selected;
+          const status = statusFor?.(i);
+          const outerFill =
+            status === "correct"
+              ? "fill-success stroke-success"
+              : status === "wrong"
+                ? "fill-error stroke-error"
+                : isSelected
+                  ? "fill-accent stroke-accent"
+                  : "fill-surface stroke-line";
+          const marked = isSelected || status !== undefined;
 
           return (
             <g
@@ -73,11 +102,11 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
               tabIndex={0}
               aria-label={keyName(major.tonic, "major", naming)}
               aria-pressed={isSelected}
-              onClick={() => setSelected(i)}
+              onClick={() => onSelect(i)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  setSelected(i);
+                  onSelect(i);
                 }
               }}
               className="cursor-pointer outline-none"
@@ -86,18 +115,14 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
                 cx={outer.x}
                 cy={outer.y}
                 r={MAJOR_NODE}
-                className={
-                  isSelected
-                    ? "fill-accent stroke-accent"
-                    : "fill-surface stroke-line"
-                }
+                className={outerFill}
                 strokeWidth={1}
               />
               <text
                 x={outer.x}
                 y={alt ? outer.y - 1 : outer.y + 4}
                 textAnchor="middle"
-                className={isSelected ? "fill-ground" : "fill-ink"}
+                className={marked ? "fill-ground" : "fill-ink"}
                 style={{ fontSize: 13 }}
               >
                 {tonicSymbol(major.tonic, naming)}
@@ -107,7 +132,7 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
                   x={outer.x}
                   y={outer.y + 11}
                   textAnchor="middle"
-                  className={isSelected ? "fill-ground" : "fill-muted"}
+                  className={marked ? "fill-ground" : "fill-muted"}
                   style={{ fontSize: 10 }}
                 >
                   {tonicSymbol(alt.tonic, naming)}
@@ -119,9 +144,7 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
                 cy={inner.y}
                 r={MINOR_NODE}
                 className={
-                  isSelected
-                    ? "fill-surface stroke-accent"
-                    : "fill-ground stroke-line"
+                  marked ? "fill-surface stroke-accent" : "fill-ground stroke-line"
                 }
                 strokeWidth={1}
               />
@@ -129,7 +152,7 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
                 x={inner.x}
                 y={inner.y + 4}
                 textAnchor="middle"
-                className={isSelected ? "fill-accent" : "fill-muted"}
+                className={marked ? "fill-accent" : "fill-muted"}
                 style={{ fontSize: 11 }}
               >
                 {tonicSymbol(major.relativeMinor, naming)}
@@ -158,6 +181,7 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
         </text>
       </svg>
 
+      {showDetail ? (
       <div className="flex flex-col gap-4">
         {keys.map((key) => (
           <div
@@ -180,6 +204,7 @@ export function CircleOfFifths({ naming }: { naming: Naming }) {
           </p>
         ) : null}
       </div>
+      ) : null}
     </div>
   );
 }

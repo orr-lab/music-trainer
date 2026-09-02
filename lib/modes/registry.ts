@@ -1,11 +1,26 @@
 import type { Mode } from "@/lib/engine/types";
 import { buildMode } from "./build";
+import { circleNavMode } from "./circle-nav";
 import { intervalsMode } from "./intervals";
 import { keysMode } from "./keys";
 import { notesMode } from "./notes";
+import { placeNoteMode } from "./place-note";
+import { semitonesMode } from "./semitones";
+import { signaturesMode } from "./signatures";
+import { writeSignatureMode } from "./write-signature";
 
 /** Every drill mode. A new mode is one entry here plus its own file. */
-export const MODES: Mode[] = [intervalsMode, notesMode, buildMode, keysMode];
+export const MODES: Mode[] = [
+  intervalsMode,
+  semitonesMode,
+  notesMode,
+  placeNoteMode,
+  buildMode,
+  keysMode,
+  signaturesMode,
+  writeSignatureMode,
+  circleNavMode,
+];
 
 export const MIXED_MODE_ID = "all";
 
@@ -23,6 +38,7 @@ export const MIXED_MODE_ID = "all";
 const mixedMode: Mode = {
   id: MIXED_MODE_ID,
   title: "Mixed practice",
+  group: "",
   subtitle: "Ta'arovet",
   blurb: "Every mode at once.",
   pool: (settings) =>
@@ -32,6 +48,17 @@ const mixedMode: Mode = {
       return questions.map((q) => ({ ...q, selectionBias: share }));
     }),
 };
+
+/** Modes in menu order, under their headings. */
+export function groupedModes(): { group: string; modes: Mode[] }[] {
+  const groups: { group: string; modes: Mode[] }[] = [];
+  for (const mode of MODES) {
+    const existing = groups.find((g) => g.group === mode.group);
+    if (existing) existing.modes.push(mode);
+    else groups.push({ group: mode.group, modes: [mode] });
+  }
+  return groups;
+}
 
 export function getMode(id: string): Mode | undefined {
   if (id === MIXED_MODE_ID) return mixedMode;
