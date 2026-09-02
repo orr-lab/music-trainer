@@ -17,6 +17,8 @@ export interface AppSettings {
   buildStyle: "staff" | "typed";
   /** Whether the mugdal and muktan intervals are in play. */
   intervalSet: "basic" | "full";
+  /** Questions in one session. A session that ends is one you can finish. */
+  sessionLength: 8 | 12 | 20;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -26,6 +28,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   answerStyle: "buttons",
   buildStyle: "staff",
   intervalSet: "full",
+  sessionLength: 12,
 };
 
 function pick<K extends keyof AppSettings>(
@@ -47,5 +50,6 @@ export function readSettings(raw: ModeSettings): AppSettings {
     answerStyle: pick(raw, "answerStyle", ["buttons", "typing"]),
     buildStyle: pick(raw, "buildStyle", ["staff", "typed"]),
     intervalSet: pick(raw, "intervalSet", ["basic", "full"]),
+    sessionLength: pick(raw, "sessionLength", [8, 12, 20]),
   };
 }

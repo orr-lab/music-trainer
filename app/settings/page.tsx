@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useProgress } from "@/components/useProgress";
 import { readSettings } from "@/lib/engine/settings";
 
+function columns(options: { label: string }[]): string {
+  if (!options.every((o) => o.label.length <= 14)) return "grid-cols-1";
+  return options.length === 2 ? "grid-cols-2" : "grid-cols-3";
+}
+
 function SettingGroup({
   label,
   hint,
@@ -23,14 +28,19 @@ function SettingGroup({
         <h2 className="text-content">{label}</h2>
         {hint ? <p className="mt-1 text-content text-muted">{hint}</p> : null}
       </div>
-      <div className="flex flex-col gap-4">
+      {/*
+        Short labels sit side by side; long ones need their own row. Written
+        out rather than interpolated, because Tailwind only generates the class
+        names it can see in the source.
+      */}
+      <div className={`grid gap-4 ${columns(options)}`}>
         {options.map((o) => (
           <button
             key={o.id}
             type="button"
             aria-pressed={value === o.id}
             onClick={() => onPick(o.id)}
-            className={`min-h-14 w-full rounded-xl border px-4 text-lead ${
+            className={`min-h-14 w-full rounded-xl border px-3 text-content transition-colors sm:text-lead ${
               value === o.id
                 ? "border-accent bg-surface text-ink"
                 : "border-line bg-surface text-muted hover:border-muted hover:text-ink active:border-accent"
@@ -56,6 +66,18 @@ export default function SettingsPage() {
           Back
         </Link>
       </header>
+
+      <SettingGroup
+        label="Session length"
+        hint="How many questions before a session ends. Shorter is easier to actually start."
+        value={String(settings.sessionLength)}
+        options={[
+          { id: "8", label: "8 questions" },
+          { id: "12", label: "12 questions" },
+          { id: "20", label: "20 questions" },
+        ]}
+        onPick={(v) => setSetting("sessionLength", Number(v))}
+      />
 
       <SettingGroup
         label="Note and key names"

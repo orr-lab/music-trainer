@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnswerInput, type PartState } from "@/components/AnswerInput";
 import { QuestionMediaView } from "@/components/media";
+import { SessionComplete } from "@/components/SessionComplete";
 import { useProgress } from "@/components/useProgress";
 import { gradeQuestion, xpFor } from "@/lib/engine/grade";
 import { present } from "@/lib/engine/present";
 import { selectQuestion } from "@/lib/engine/select";
 import type { Question, QuestionResult } from "@/lib/engine/types";
+import { readSettings } from "@/lib/engine/settings";
 import { getMode } from "@/lib/modes/registry";
 
 const ADVANCE_DELAY_MS = 600;
@@ -34,22 +36,42 @@ export function DrillSession({ modeId }: { modeId: string }) {
   const [question, setQuestion] = useState<Question | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<QuestionResult | null>(null);
-  const [session, setSession] = useState({ asked: 0, correct: 0 });
+  const [session, setSession] = useState({ asked: 0, correct: 0, xp: 0 });
+  const [misses, setMisses] = useState<string[]>([]);
+  const length = readSettings(progress.settings).sessionLength;
+  const finished = session.asked >= length;
+
+  // Read inside advance() without making it depend on them.
+  const sessionRef = useRef(session);
+  const lengthRef = useRef(length);
+  useEffect(() => {
+    sessionRef.current = session;
+    lengthRef.current = length;
+  }, [session, length]);
 
   const advance = useCallback(() => {
+    setAnswers({});
+    setResult(null);
+    if (sessionRef.current.asked >= lengthRef.current) {
+      // Out of questions for this session; the summary takes the screen.
+      setQuestion(null);
+      return;
+    }
     setQuestion((prev) => {
       const next = selectQuestion(pool, progressRef.current, prev ?? undefined);
       // Shuffle once, here - not on every render, or the options would move
       // under the user's thumb.
       return next ? present(next) : null;
     });
-    setAnswers({});
-    setResult(null);
   }, [pool]);
 
   useEffect(() => {
-    if (ready && !question && pool.length > 0) advance();
-  }, [ready, question, pool, advance]);
+    // Deals the first question once the store has been read, and re-deals when
+    // a settings change rebuilds the pool. There is no event to hang this on:
+    // opening the page is the trigger.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (ready && !finished && !question && pool.length > 0) advance();
+  }, [ready, finished, question, pool, advance]);
 
   // Auto-advance on a fully correct answer; a wrong one waits for Next.
   useEffect(() => {
@@ -57,6 +79,14 @@ export function DrillSession({ modeId }: { modeId: string }) {
     const t = setTimeout(advance, ADVANCE_DELAY_MS);
     return () => clearTimeout(t);
   }, [result, advance]);
+
+  const restart = useCallback(() => {
+    setSession({ asked: 0, correct: 0, xp: 0 });
+    setMisses([]);
+    setAnswers({});
+    setResult(null);
+    setQuestion(null);
+  }, []);
 
   const answerPart = useCallback(
     (partId: string, value: string) => {
@@ -70,7 +100,14 @@ export function DrillSession({ modeId }: { modeId: string }) {
         setSession((s) => ({
           asked: s.asked + 1,
           correct: s.correct + (graded.correct ? 1 : 0),
+          xp: s.xp + xpFor(graded),
         }));
+        if (!graded.correct) {
+          setMisses((m) => [
+            ...m,
+            ...graded.topicResults.filter((t) => !t.correct).map((t) => t.topic),
+          ]);
+        }
       }
     },
     [answers, question, record, result],
@@ -137,20 +174,35 @@ export function DrillSession({ modeId }: { modeId: string }) {
         <Link href="/" className="min-h-12 py-3 pr-4 transition-colors hover:text-ink">
           &larr; Back
         </Link>
-        <div className="flex gap-4">
-          <span>
-            Streak <span className="text-ink">{progress.currentStreak}</span>
-          </span>
-          <span>
-            Session{" "}
-            <span className="text-ink">
-              {session.correct}/{session.asked}
-            </span>
-          </span>
-        </div>
+        <span>
+          Streak <span className="text-ink">{progress.currentStreak}</span>
+        </span>
       </header>
 
-      {question ? (
+      {/* How much of the session is left, without a number to read. */}
+      <div
+        className="h-1 w-full overflow-hidden rounded-full bg-line"
+        role="progressbar"
+        aria-valuenow={Math.min(session.asked, length)}
+        aria-valuemin={0}
+        aria-valuemax={length}
+        aria-label="Session progress"
+      >
+        <div
+          className="h-full rounded-full bg-accent transition-[width] duration-300"
+          style={{ width: `${(Math.min(session.asked, length) / length) * 100}%` }}
+        />
+      </div>
+
+      {finished && !question ? (
+        <SessionComplete
+          asked={session.asked}
+          correct={session.correct}
+          xp={session.xp}
+          misses={misses}
+          onAgain={restart}
+        />
+      ) : question ? (
         <div className="flex flex-1 flex-col gap-8 pt-8 pb-16 sm:justify-center sm:pb-8">
           <div className="shrink-0 text-center">
             {question.media ? <QuestionMediaView media={question.media} /> : null}
@@ -233,7 +285,7 @@ export function DrillSession({ modeId }: { modeId: string }) {
                     onClick={advance}
                     className="min-h-14 w-full rounded-xl border border-accent bg-surface text-lead text-ink transition-colors hover:bg-line/40"
                   >
-                    Next
+                    {session.asked >= length ? "See how you did" : "Next"}
                   </button>
                 </div>
               )

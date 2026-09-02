@@ -148,6 +148,11 @@ export function liveDailyStreak(p: Progress, now: Date = new Date()): number {
   return 0;
 }
 
+/** Answers given today - what the daily goal is measured against. */
+export function answeredToday(p: Progress, now: Date = new Date()): number {
+  return p.days[dayKey(now)] ?? 0;
+}
+
 export function accuracy(seen: number, correct: number): number {
   return seen === 0 ? 0 : correct / seen;
 }
