@@ -104,11 +104,6 @@ export function StaffPicker({
     }
   }
 
-  const label =
-    pending === null
-      ? null
-      : (options.find((o) => o.value === pending)?.label ?? "");
-
   return (
     <div className="flex flex-col gap-4">
       <div
@@ -132,7 +127,7 @@ export function StaffPicker({
               type="button"
               onClick={() => move(1)}
               aria-label="Move the note up one step"
-              className="min-h-14 rounded-xl border border-line bg-surface text-lead active:border-accent"
+              className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
             >
               &uarr; Up
             </button>
@@ -140,7 +135,7 @@ export function StaffPicker({
               type="button"
               onClick={() => move(-1)}
               aria-label="Move the note down one step"
-              className="min-h-14 rounded-xl border border-line bg-surface text-lead active:border-accent"
+              className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
             >
               &darr; Down
             </button>
@@ -155,7 +150,8 @@ export function StaffPicker({
                 : "border-accent bg-surface text-ink"
             }`}
           >
-            {pending === null ? "Tap the staff to place a note" : `Place ${label}`}
+            {/* Never name the pending note: reading it back is the exercise. */}
+            {pending === null ? "Tap the staff to place a note" : "Place it here"}
           </button>
         </>
       )}

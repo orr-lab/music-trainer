@@ -1,6 +1,6 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
-import { INTERVALS, toneLabel } from "@/lib/data/intervals";
+import { intervalsFor, toneLabel, toneValues } from "@/lib/data/intervals";
 import {
   HIGHEST,
   LOWEST,
@@ -12,14 +12,6 @@ import {
 
 export const SEMITONES_MODE_ID = "semitones";
 
-/** Every interval except the unison, which has nothing to count. */
-const COUNTABLE = INTERVALS.filter((i) => i.tones > 0);
-
-const TONE_OPTIONS: ValueOption[] = COUNTABLE.map((i) => ({
-  value: i.tones,
-  label: toneLabel(i.tones),
-})).sort((a, b) => a.value - b.value);
-
 export const semitonesMode: Mode = {
   id: SEMITONES_MODE_ID,
   title: "Counting semitones",
@@ -27,7 +19,16 @@ export const semitonesMode: Mode = {
   subtitle: "Sfirat tonim",
   blurb: "Count the distance out on a keyboard, key by key.",
   pool: (raw) => {
-    const { naming } = readSettings(raw);
+    const settings = readSettings(raw);
+    const naming = settings.naming;
+    // Every interval except the unison, which has nothing to count.
+    const COUNTABLE = intervalsFor(settings.intervalSet).filter(
+      (i) => i.tones > 0,
+    );
+    const TONE_OPTIONS: ValueOption[] = toneValues(COUNTABLE).map((value) => ({
+      value,
+      label: toneLabel(value),
+    }));
     const questions: Question[] = [];
 
     const positions: ValueOption[] = allKeys().map((semitone) => ({
@@ -83,14 +84,23 @@ export const semitonesMode: Mode = {
       }
     }
 
-    // The other direction: two keys are marked, measure the gap.
+    // The other direction: two keys are marked, measure the gap. One question
+    // per distance, not per name - the keys cannot tell you which spelling it
+    // is, so the answer is the size and the feedback names them all.
+    const sizes = toneValues(COUNTABLE);
     for (const start of naturalLows) {
-      for (const interval of COUNTABLE) {
-        const target = start + interval.tones * 2;
+      for (const tones of sizes) {
+        const named = COUNTABLE.filter((i) => i.tones === tones);
+        const interval = named[0];
+        const target = start + tones * 2;
         if (target > HIGHEST) continue;
+        const allNames =
+          named.length === 1
+            ? `a ${interval.name}`
+            : named.map((i) => i.name).join(", or ");
 
         questions.push({
-          id: `semitones:measure:${start}:${interval.id}`,
+          id: `semitones:measure:${start}:${tones}`,
           modeId: SEMITONES_MODE_ID,
           prompt: "How far apart are these?",
           media: {
@@ -104,11 +114,11 @@ export const semitonesMode: Mode = {
               id: "tones",
               label: "Tones",
               input: { kind: "value", options: TONE_OPTIONS },
-              accepted: [String(interval.tones)],
-              display: `${toneLabel(interval.tones)} tones - a ${interval.name}`,
-              reason: `${interval.tones * 2} semitones, which is ${toneLabel(
-                interval.tones,
-              )} tones: a ${interval.name}. Count them: ${countingRun(
+              accepted: [String(tones)],
+              display: `${toneLabel(tones)} tones - ${allNames}`,
+              reason: `${tones * 2} semitones, which is ${toneLabel(
+                tones,
+              )} tones: ${allNames}. On a keyboard the spelling is invisible - it is the letters that decide the name. Count them: ${countingRun(
                 start,
                 target,
                 naming,

@@ -18,7 +18,7 @@ function SecondaryLink({ href, children }: { href: string; children: string }) {
   return (
     <Link
       href={href}
-      className="flex min-h-14 items-center justify-center rounded-xl border border-line bg-surface text-lead active:border-accent"
+      className="flex min-h-14 items-center justify-center rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
     >
       {children}
     </Link>
@@ -47,7 +47,7 @@ export default function Home() {
       <section className="flex flex-col gap-4">
         <Link
           href={`/drill/${MIXED_MODE_ID}`}
-          className="flex min-h-14 flex-col gap-1 rounded-xl border border-accent bg-surface p-4"
+          className="flex min-h-14 flex-col gap-1 rounded-xl border border-accent bg-surface p-4 transition-colors hover:bg-line/40"
         >
           <span className="text-lead">Ta&apos;arovet</span>
           <span className="text-content text-muted">
@@ -68,7 +68,7 @@ export default function Home() {
               <Link
                 key={mode.id}
                 href={`/drill/${mode.id}`}
-                className="flex min-h-14 flex-col gap-1 rounded-xl border border-line bg-surface p-4 active:border-accent"
+                className="flex min-h-14 flex-col gap-1 rounded-xl border border-line bg-surface p-4 transition-colors hover:border-muted active:border-accent"
               >
                 <span className="text-lead">{mode.subtitle}</span>
                 <span className="text-content text-muted">{mode.blurb}</span>

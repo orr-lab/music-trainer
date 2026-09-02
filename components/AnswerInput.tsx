@@ -24,12 +24,12 @@ function optionClasses(args: {
 }): string {
   const { selected, state, isAnswer } = args;
   const base =
-    "flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border px-2 text-lead transition-colors sm:px-4";
+    "relative flex min-h-14 w-full items-center justify-center rounded-xl border px-3 text-lead transition-colors sm:px-4";
   if (state === "idle") {
     return `${base} ${
       selected
         ? "border-accent bg-surface text-ink"
-        : "border-line bg-surface text-ink active:border-accent"
+        : "border-line bg-surface text-ink hover:border-muted active:border-accent"
     }`;
   }
   if (isAnswer) return `${base} border-success bg-surface text-success`;
@@ -38,10 +38,15 @@ function optionClasses(args: {
   return `${base} border-line bg-surface text-muted`;
 }
 
+/**
+ * The desktop shortcut for an option. Absolutely placed so the label stays
+ * centred, and only shown when every option has one - a numbered half of a list
+ * is worse than none.
+ */
 function KeyHint({ digit, show }: { digit: number; show: boolean }) {
-  if (!show || digit > 9) return null;
+  if (!show) return null;
   return (
-    <span className="hidden rounded border border-line px-1.5 text-content text-muted sm:inline">
+    <span className="absolute left-2 top-1.5 hidden text-content text-muted/70 sm:block">
       {digit}
     </span>
   );
@@ -74,6 +79,7 @@ export function AnswerInput({
       >
         <input
           value={state === "idle" ? draft : (value ?? "")}
+          aria-label={part.label}
           onChange={(e) => setDraft(e.target.value)}
           disabled={locked}
           // Typing mode is opt-in, so raising the keyboard is what was asked for.
@@ -120,6 +126,8 @@ export function AnswerInput({
    */
   const compact =
     options.length > 4 && options.every((o) => o.label.length <= 6);
+  // Number keys only go up to nine; a partly-numbered list reads as a bug.
+  const numbered = keyHints && state === "idle" && options.length <= 9;
   const layout = compact
     ? "grid-cols-5 gap-3 sm:grid-cols-7 sm:gap-4"
     : "grid-cols-1 gap-4";
@@ -138,7 +146,7 @@ export function AnswerInput({
             isAnswer: state !== "idle" && matches(o.value, part.accepted),
           })}
         >
-          <KeyHint digit={i + 1} show={keyHints && state === "idle"} />
+          <KeyHint digit={i + 1} show={numbered} />
           <span>{o.label}</span>
         </button>
       ))}

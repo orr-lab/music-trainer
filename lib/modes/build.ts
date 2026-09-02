@@ -1,6 +1,6 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
-import { INTERVALS, toneLabel } from "@/lib/data/intervals";
+import { intervalsFor, toneLabel } from "@/lib/data/intervals";
 import {
   DIFFICULTY_RANGE,
   SCALE_ORDER,
@@ -51,6 +51,7 @@ export const buildMode: Mode = {
   blurb: "Given a note and an interval, place the other note.",
   pool: (raw) => {
     const settings = readSettings(raw);
+    const rows = intervalsFor(settings.intervalSet);
     const clefs: Clef[] =
       settings.clefs === "both" ? ["treble", "bass"] : [settings.clefs];
 
@@ -72,8 +73,12 @@ export const buildMode: Mode = {
           // Unisons are not a drill, and nothing wider than an octave.
           if (distance === 0 || Math.abs(distance) > 12) continue;
 
-          const interval = INTERVALS.find(
-            (i) => i.tones === Math.abs(distance) / 2,
+          // Both halves have to match: three tones across four letters is a
+          // kvarta mugdelet, across five letters a kvinta muktenet. The triton
+          // has no letter span and is never the answer here.
+          const letters = Math.abs(step(target) - step(start));
+          const interval = rows.find(
+            (i) => i.tones === Math.abs(distance) / 2 && i.letterSpan === letters,
           );
           if (!interval) continue;
 

@@ -15,14 +15,17 @@ export interface AppSettings {
   answerStyle: "buttons" | "typing";
   /** Build an interval by placing it on the staff, or by naming the note. */
   buildStyle: "staff" | "typed";
+  /** Whether the mugdal and muktan intervals are in play. */
+  intervalSet: "basic" | "full";
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   naming: "solfege",
   clefs: "both",
-  staffDifficulty: "easy",
+  staffDifficulty: "medium",
   answerStyle: "buttons",
   buildStyle: "staff",
+  intervalSet: "full",
 };
 
 function pick<K extends keyof AppSettings>(
@@ -43,5 +46,6 @@ export function readSettings(raw: ModeSettings): AppSettings {
     staffDifficulty: pick(raw, "staffDifficulty", ["easy", "medium", "hard"]),
     answerStyle: pick(raw, "answerStyle", ["buttons", "typing"]),
     buildStyle: pick(raw, "buildStyle", ["staff", "typed"]),
+    intervalSet: pick(raw, "intervalSet", ["basic", "full"]),
   };
 }

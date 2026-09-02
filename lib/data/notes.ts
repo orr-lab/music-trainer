@@ -82,17 +82,20 @@ export const DIFFICULTY_RANGE: Record<
   StaffDifficulty,
   Record<Clef, [Pitch, Pitch]>
 > = {
+  // Nothing outside the five lines: 9 notes a clef.
   easy: {
     treble: [{ letter: "e", octave: 4 }, { letter: "f", octave: 5 }],
     bass: [{ letter: "g", octave: 2 }, { letter: "a", octave: 3 }],
   },
+  // One ledger line either way: 13 a clef.
   medium: {
     treble: [{ letter: "c", octave: 4 }, { letter: "a", octave: 5 }],
     bass: [{ letter: "e", octave: 2 }, { letter: "c", octave: 4 }],
   },
+  // Four either way: 25 a clef, and as far as the staff box can draw.
   hard: {
-    treble: [{ letter: "a", octave: 3 }, { letter: "c", octave: 6 }],
-    bass: [{ letter: "c", octave: 2 }, { letter: "e", octave: 4 }],
+    treble: [{ letter: "d", octave: 3 }, { letter: "g", octave: 6 }],
+    bass: [{ letter: "f", octave: 1 }, { letter: "b", octave: 4 }],
   },
 };
 

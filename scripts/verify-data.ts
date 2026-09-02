@@ -52,11 +52,33 @@ eq("easy treble = E4..F5", easyTreble.map(N.vexKey), ["e/4","f/4","g/4","a/4","b
 eq("easy treble has no ledger lines", easyTreble.every(x => N.ledgerLines(x,"treble") === 0), true);
 const easyBass = N.pitchesBetween(...N.DIFFICULTY_RANGE.easy.bass);
 eq("easy bass has no ledger lines", easyBass.every(x => N.ledgerLines(x,"bass") === 0), true);
-const hardTreble = N.pitchesBetween(...N.DIFFICULTY_RANGE.hard.treble);
-eq("hard treble reaches 2 ledgers both ways", [
-  Math.max(...hardTreble.filter(x=>N.step(x) < N.STAFF_LINES.treble.bottom).map(x=>N.ledgerLines(x,"treble"))),
-  Math.max(...hardTreble.filter(x=>N.step(x) > N.STAFF_LINES.treble.top).map(x=>N.ledgerLines(x,"treble"))),
-], [2,2]);
+// Each difficulty reaches exactly as far outside the staff as it claims.
+const reach = (level: N.StaffDifficulty, clef: N.Clef) => {
+  const notes = N.pitchesBetween(...N.DIFFICULTY_RANGE[level][clef]);
+  return Math.max(...notes.map((n) => N.ledgerLines(n, clef)));
+};
+for (const clef of ["treble", "bass"] as const) {
+  eq(`easy ${clef} stays on the staff`, reach("easy", clef), 0);
+  eq(`medium ${clef} reaches one ledger line`, reach("medium", clef), 1);
+  eq(`hard ${clef} reaches four ledger lines`, reach("hard", clef), 4);
+  // Each level has to be a superset of the one below, or switching up would
+  // lose questions rather than add them.
+  const inside = (level: N.StaffDifficulty) =>
+    new Set(N.pitchesBetween(...N.DIFFICULTY_RANGE[level][clef]).map(N.step));
+  const easy = inside("easy");
+  const medium = inside("medium");
+  const hard = inside("hard");
+  eq(
+    `${clef}: medium contains easy`,
+    [...easy].every((s) => medium.has(s)),
+    true,
+  );
+  eq(
+    `${clef}: hard contains medium`,
+    [...medium].every((s) => hard.has(s)),
+    true,
+  );
+}
 
 // --- Typed answers -----------------------------------------------------------
 eq("G accepts both systems", N.acceptedNames(p("g", 4)), ["g", "sol", "so"]);
@@ -253,10 +275,15 @@ const LETTER_SPAN: Record<string, number[]> = {
       (q.promptSub ?? "").startsWith("above"),
     );
 
-    const family = interval.name.split(" ")[0];
     eq(
       `${q.id}: ${interval.name} spans the right number of letters`,
-      LETTER_SPAN[family].includes(Math.abs(N.step(target) - N.step(start))),
+      Math.abs(N.step(target) - N.step(start)),
+      interval.letterSpan,
+    );
+    // The declared span must match what the name says it is.
+    eq(
+      `${interval.name}: declared span matches its name`,
+      LETTER_SPAN[interval.name.split(" ")[0]].includes(interval.letterSpan ?? -1),
       true,
     );
 
@@ -268,13 +295,36 @@ const LETTER_SPAN: Record<string, number[]> = {
     );
   }
 
-  // Every interval in the table can actually be built, in both directions.
-  for (const interval of INTERVALS.filter((i) => i.tones > 0)) {
+  // Every interval two natural notes can spell turns up, in both directions.
+  // The mugdal and muktan ones mostly cannot - a kvinta mugdelet needs an
+  // accidental - so the check is over what is actually spellable, worked out
+  // here rather than taken from the generator.
+  const spellable = new Set<string>();
+  const naturals: N.Pitch[] = N.pitchesBetween(
+    { letter: "c", octave: 3 },
+    { letter: "b", octave: 5 },
+  );
+  for (const a of naturals) {
+    for (const b of naturals) {
+      const tones = Math.abs(N.semitone(b) - N.semitone(a)) / 2;
+      const letters = Math.abs(N.step(b) - N.step(a));
+      if (tones === 0 || tones > 6) continue;
+      const match = INTERVALS.find(
+        (i) => i.tones === tones && i.letterSpan === letters,
+      );
+      if (match) spellable.add(match.name);
+    }
+  }
+  eq("kvarta mugdelet is spellable with naturals", spellable.has("kvarta mugdelet"), true);
+  eq("kvinta muktenet is spellable with naturals", spellable.has("kvinta muktenet"), true);
+  eq("kvinta mugdelet needs an accidental", spellable.has("kvinta mugdelet"), false);
+
+  for (const name of spellable) {
     for (const direction of ["above", "below"]) {
       eq(
-        `${interval.name} can be built ${direction}`,
+        `${name} can be built ${direction}`,
         pool.some(
-          (q) => q.prompt === interval.name && (q.promptSub ?? "").startsWith(direction),
+          (q) => q.prompt === name && (q.promptSub ?? "").startsWith(direction),
         ),
         true,
       );

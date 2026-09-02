@@ -33,7 +33,7 @@ function SettingGroup({
             className={`min-h-14 w-full rounded-xl border px-4 text-lead ${
               value === o.id
                 ? "border-accent bg-surface text-ink"
-                : "border-line bg-surface text-muted active:border-accent"
+                : "border-line bg-surface text-muted hover:border-muted hover:text-ink active:border-accent"
             }`}
           >
             {o.label}
@@ -69,6 +69,17 @@ export default function SettingsPage() {
       />
 
       <SettingGroup
+        label="Which intervals"
+        hint="Mugdal and muktan intervals are where the name stops following the tone count — fa to si and si to fa are both three tones, but one is a kvarta and the other a kvinta."
+        value={settings.intervalSet}
+        options={[
+          { id: "full", label: "Everything, including mugdal and muktan" },
+          { id: "basic", label: "Zaka, ktana and gdola only" },
+        ]}
+        onPick={(v) => setSetting("intervalSet", v)}
+      />
+
+      <SettingGroup
         label="Clefs"
         hint="Which clefs the staff drill asks about."
         value={settings.clefs}
@@ -82,12 +93,12 @@ export default function SettingsPage() {
 
       <SettingGroup
         label="Staff difficulty"
-        hint="How far outside the staff the notes go."
+        hint="How far outside the staff the notes go. Wider means more notes to meet, and less repetition."
         value={settings.staffDifficulty}
         options={[
-          { id: "easy", label: "Inside the staff" },
-          { id: "medium", label: "Up to a ledger line or two" },
-          { id: "hard", label: "Several ledger lines" },
+          { id: "easy", label: "Inside the staff only" },
+          { id: "medium", label: "Up to two ledger lines" },
+          { id: "hard", label: "Up to three ledger lines" },
         ]}
         onPick={(v) => setSetting("staffDifficulty", v)}
       />

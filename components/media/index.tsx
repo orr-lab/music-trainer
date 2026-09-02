@@ -90,11 +90,7 @@ export function AnswerMediaView({
       );
     case "piano-picker":
       return (
-        <PianoPicker
-          start={Number(render.payload.start)}
-          naming={naming(render.payload.naming)}
-          {...shared}
-        />
+        <PianoPicker start={Number(render.payload.start)} {...shared} />
       );
     default:
       return null;

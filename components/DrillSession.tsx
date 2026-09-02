@@ -134,7 +134,7 @@ export function DrillSession({ modeId }: { modeId: string }) {
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col p-4">
       <header className="flex items-center justify-between text-content text-muted">
-        <Link href="/" className="min-h-12 py-3 pr-4">
+        <Link href="/" className="min-h-12 py-3 pr-4 transition-colors hover:text-ink">
           &larr; Back
         </Link>
         <div className="flex gap-4">
@@ -151,8 +151,8 @@ export function DrillSession({ modeId }: { modeId: string }) {
       </header>
 
       {question ? (
-        <div className="flex flex-1 flex-col gap-8 pt-8 pb-16">
-          <div className="text-center">
+        <div className="flex flex-1 flex-col gap-8 pt-8 pb-16 sm:justify-center sm:pb-8">
+          <div className="shrink-0 text-center">
             {question.media ? <QuestionMediaView media={question.media} /> : null}
             {/*
               A prompt with a sub-line underneath it is the subject of the
@@ -180,11 +180,13 @@ export function DrillSession({ modeId }: { modeId: string }) {
             )}
           </div>
 
-          <div className="flex flex-col gap-8">
+          <div className="flex shrink-0 flex-col gap-8">
             {question.parts.map((part) => (
               <section key={part.id} className="flex flex-col gap-4">
                 {question.parts.length > 1 ? (
-                  <h2 className="text-content text-muted">{part.label}</h2>
+                  <h2 className="text-center text-content text-muted">
+                    {part.label}
+                  </h2>
                 ) : null}
                 <AnswerInput
                   key={`${question.id}:${part.id}`}
@@ -199,9 +201,16 @@ export function DrillSession({ modeId }: { modeId: string }) {
             ))}
           </div>
 
-          {/* Reserved space, and always below the answers: feedback never
-              pushes the buttons around. */}
-          <div className="min-h-32" aria-live="polite">
+          {/*
+            Feedback sits below the answers and never pushes them around. On a
+            phone the page flows downwards, so a minimum is enough. On a wider
+            screen the block is centred, which only stays still if its height is
+            fixed - hence the exact height there.
+          */}
+          <div
+            className="min-h-32 shrink-0 sm:h-56 sm:overflow-y-auto"
+            aria-live="polite"
+          >
             {result ? (
               result.correct ? (
                 <p className="text-lead text-success">
@@ -222,7 +231,7 @@ export function DrillSession({ modeId }: { modeId: string }) {
                   <button
                     type="button"
                     onClick={advance}
-                    className="min-h-14 w-full rounded-xl border border-accent bg-surface text-lead text-ink"
+                    className="min-h-14 w-full rounded-xl border border-accent bg-surface text-lead text-ink transition-colors hover:bg-line/40"
                   >
                     Next
                   </button>

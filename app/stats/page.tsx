@@ -124,14 +124,14 @@ export default function StatsPage() {
         <button
           type="button"
           onClick={download}
-          className="min-h-14 rounded-xl border border-line bg-surface text-lead active:border-accent"
+          className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
         >
           Export JSON
         </button>
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="min-h-14 rounded-xl border border-line bg-surface text-lead active:border-accent"
+          className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
         >
           Import JSON
         </button>

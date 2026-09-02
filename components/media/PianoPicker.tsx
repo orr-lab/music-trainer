@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { PianoKeyboard } from "./PianoKeyboard";
 import { STAFF_COLORS } from "./StaffMedia";
-import { keyName } from "@/lib/data/keyboard";
 import type { ValueOption } from "@/lib/engine/types";
 
 /**
@@ -14,7 +13,6 @@ import type { ValueOption } from "@/lib/engine/types";
  */
 export function PianoPicker({
   start,
-  naming,
   options,
   value,
   state,
@@ -23,7 +21,6 @@ export function PianoPicker({
   onAnswer,
 }: {
   start: number;
-  naming: "solfege" | "letters";
   options: ValueOption[];
   value: string | undefined;
   state: "idle" | "correct" | "wrong";
@@ -70,9 +67,8 @@ export function PianoPicker({
               : "border-accent bg-surface text-ink"
           }`}
         >
-          {pending === null
-            ? "Tap a key"
-            : `Choose ${keyName(pending, naming)}`}
+          {/* Naming the key would hand over the answer. */}
+          {pending === null ? "Tap a key" : "Choose this key"}
         </button>
       )}
     </div>
