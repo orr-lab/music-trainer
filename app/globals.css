@@ -31,7 +31,10 @@ body {
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* --font-sans is set on <html> by next/font; the rest is the fallback for
+     the moment before it loads. */
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
   /* Never bounce-scroll a drill screen on mobile. */
   overscroll-behavior-y: none;
 }
