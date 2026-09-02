@@ -40,6 +40,7 @@ export function CircleOfFifths({
   onSelect,
   showDetail = true,
   statusFor,
+  labels = "all",
 }: {
   naming: Naming;
   selected: number | null;
@@ -48,6 +49,12 @@ export function CircleOfFifths({
   showDetail?: boolean;
   /** Marks a position right or wrong once an answer has been graded. */
   statusFor?: (index: number) => "correct" | "wrong" | undefined;
+  /**
+   * "all" for the reference. "anchor" while a question is open: only do at the
+   * top is named, because a fully labelled circle turns "a fifth down" into
+   * "one step anticlockwise" and asks nothing about keys.
+   */
+  labels?: "all" | "anchor";
 }) {
   const keys =
     selected === null
@@ -84,6 +91,7 @@ export function CircleOfFifths({
           const outer = position(i, MAJOR_RADIUS);
           const inner = position(i, MINOR_RADIUS);
           const isSelected = i === selected;
+          const named = labels === "all" || i === 0;
           const status = statusFor?.(i);
           const outerFill =
             status === "correct"
@@ -125,7 +133,7 @@ export function CircleOfFifths({
                 className={marked ? "fill-ground" : "fill-ink"}
                 style={{ fontSize: 13 }}
               >
-                {tonicSymbol(major.tonic, naming)}
+                {named ? tonicSymbol(major.tonic, naming) : ""}
               </text>
               {alt ? (
                 <text
@@ -135,7 +143,7 @@ export function CircleOfFifths({
                   className={marked ? "fill-ground" : "fill-muted"}
                   style={{ fontSize: 10 }}
                 >
-                  {tonicSymbol(alt.tonic, naming)}
+                  {named ? tonicSymbol(alt.tonic, naming) : ""}
                 </text>
               ) : null}
 
@@ -155,7 +163,7 @@ export function CircleOfFifths({
                 className={marked ? "fill-accent" : "fill-muted"}
                 style={{ fontSize: 11 }}
               >
-                {tonicSymbol(major.relativeMinor, naming)}
+                {named ? tonicSymbol(major.relativeMinor, naming) : ""}
               </text>
             </g>
           );
@@ -164,6 +172,7 @@ export function CircleOfFifths({
         <text
           x={CENTRE}
           y={CENTRE - 4}
+          opacity={labels === "all" ? 1 : 0.4}
           textAnchor="middle"
           className="fill-muted"
           style={{ fontSize: 11 }}
@@ -173,6 +182,7 @@ export function CircleOfFifths({
         <text
           x={CENTRE}
           y={CENTRE + 12}
+          opacity={labels === "all" ? 1 : 0.4}
           textAnchor="middle"
           className="fill-muted"
           style={{ fontSize: 11 }}

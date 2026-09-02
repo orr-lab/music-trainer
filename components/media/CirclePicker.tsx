@@ -33,6 +33,8 @@ export function CirclePicker({
       naming={naming}
       selected={state === "idle" ? chosen : null}
       showDetail={false}
+      // Named only once it has been answered, so the feedback still teaches.
+      labels={state === "idle" ? "anchor" : "all"}
       onSelect={(index) => {
         if (!locked) onAnswer(String(index));
       }}

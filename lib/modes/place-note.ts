@@ -3,10 +3,14 @@ import { readSettings } from "@/lib/engine/settings";
 import {
   DIFFICULTY_RANGE,
   SCALE_ORDER,
+  alterSuffix,
+  alteredName,
+  answerValue,
   noteName,
   pitchesBetween,
   positionText,
   step,
+  type AlteredPitch,
   type Clef,
 } from "@/lib/data/notes";
 
@@ -38,42 +42,43 @@ export const placeNoteMode: Mode = {
         const matching = range.filter((p) => p.letter === letter);
         if (matching.length === 0) continue;
 
-        questions.push({
-          id: `place-note:${clef}:${letter}`,
-          modeId: PLACE_NOTE_MODE_ID,
-          prompt: noteName({ letter, octave: 4 }, settings.naming),
-          promptSub: `put it on the ${clef} staff`,
-          weight: 1,
-          topics: ["writing notes"],
-          parts: [
-            {
-              id: "position",
-              label: "Position",
-              input: {
-                kind: "value",
-                options: positions,
-                render: { kind: "staff-picker", payload: { clef } },
+        for (const alter of [0, 1, -1] as const) {
+          const target: AlteredPitch = { ...matching[0], alter };
+          const name = alteredName(target, settings.naming);
+
+          questions.push({
+            id: `place-note:${clef}:${letter}${alterSuffix(alter)}`,
+            modeId: PLACE_NOTE_MODE_ID,
+            prompt: name,
+            promptSub: `put it on the ${clef} staff`,
+            weight: alter === 0 ? 1 : 1.2,
+            topics: ["writing notes"],
+            parts: [
+              {
+                id: "position",
+                label: "Position",
+                input: {
+                  kind: "value",
+                  options: positions,
+                  render: { kind: "staff-picker", payload: { clef } },
+                },
+                // Any octave counts: the exercise is knowing where the letter
+                // lives on this clef, and which sign it needs - not which one
+                // of its octaves was meant.
+                accepted: matching.map((p) => answerValue({ ...p, alter })),
+                display: `${name} - ${positionText(matching[0], clef).replace(
+                  /\.$/,
+                  "",
+                )}${matching.length > 1 ? ", or any other octave of it" : ""}`,
+                reason: `Any ${name} counts. The lowest one on this staff is the ${positionText(
+                  matching[0],
+                  clef,
+                ).toLowerCase()}`,
+                topics: ["writing notes", `${clef} clef`],
               },
-              // Any octave counts: the exercise is knowing where the letter
-              // lives on this clef, not which one of its octaves was meant.
-              accepted: matching.map((p) => String(step(p))),
-              display: `${noteName(matching[0], settings.naming)} - ${positionText(
-                matching[0],
-                clef,
-              ).replace(/\.$/, "")}${
-                matching.length > 1 ? ", or any other octave of it" : ""
-              }`,
-              reason: `Any ${noteName(
-                matching[0],
-                settings.naming,
-              )} counts. The lowest one on this staff is the ${positionText(
-                matching[0],
-                clef,
-              ).toLowerCase()}`,
-              topics: ["writing notes", `${clef} clef`],
-            },
-          ],
-        });
+            ],
+          });
+        }
       }
     }
 

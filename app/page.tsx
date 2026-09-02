@@ -105,16 +105,21 @@ export default function Home() {
         </section>
       ))}
 
-      <nav className="flex gap-4 text-content text-muted">
-        <Link href="/circle" className="py-3 transition-colors hover:text-ink">
-          Circle
-        </Link>
-        <Link href="/stats" className="py-3 transition-colors hover:text-ink">
-          Stats
-        </Link>
-        <Link href="/settings" className="py-3 transition-colors hover:text-ink">
-          Settings
-        </Link>
+      <nav className="grid grid-cols-3 gap-4">
+        {[
+          { href: "/circle", label: "Circle", hint: "Reference" },
+          { href: "/stats", label: "Stats", hint: "Progress" },
+          { href: "/settings", label: "Settings", hint: "Difficulty" },
+        ].map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-surface transition-colors hover:border-muted active:border-accent"
+          >
+            <span className="text-content text-ink">{item.label}</span>
+            <span className="text-content text-muted">{item.hint}</span>
+          </Link>
+        ))}
       </nav>
     </main>
   );

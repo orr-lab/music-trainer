@@ -32,10 +32,10 @@ function optionClasses(args: {
         : "border-line bg-surface text-ink hover:border-muted active:border-accent"
     }`;
   }
-  if (isAnswer) return `${base} border-success bg-surface text-success`;
+  if (isAnswer) return `${base} border-success bg-success/10 text-success`;
   if (selected && state === "wrong")
-    return `${base} border-error bg-surface text-error`;
-  return `${base} border-line bg-surface text-muted`;
+    return `${base} border-error bg-error/10 text-error`;
+  return `${base} border-line bg-surface text-muted/60`;
 }
 
 /**

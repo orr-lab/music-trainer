@@ -54,7 +54,7 @@ export function SessionComplete({
           : "That one was rough - which is the point of drilling it.";
 
   return (
-    <div className="flex flex-1 flex-col justify-center gap-12 py-12">
+    <div className="animate-rise flex flex-1 flex-col justify-center gap-12 py-12">
       <div className="text-center">
         <h1 className="text-display font-semibold tracking-tight">
           {correct}/{asked}

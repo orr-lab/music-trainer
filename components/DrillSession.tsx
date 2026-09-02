@@ -203,7 +203,10 @@ export function DrillSession({ modeId }: { modeId: string }) {
           onAgain={restart}
         />
       ) : question ? (
-        <div className="flex flex-1 flex-col gap-8 pt-8 pb-16 sm:justify-center sm:pb-8">
+        <div
+          key={question.id}
+          className="animate-rise flex flex-1 flex-col gap-8 pt-8 pb-16 sm:justify-center sm:pb-8"
+        >
           <div className="shrink-0 text-center">
             {question.media ? <QuestionMediaView media={question.media} /> : null}
             {/*

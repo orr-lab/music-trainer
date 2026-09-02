@@ -5,8 +5,21 @@ import { StaffMedia, STAFF_COLORS, type StaffGeometry } from "./StaffMedia";
 import { SCALE_ORDER, STAFF_LINES, type Clef } from "@/lib/data/notes";
 import type { ValueOption } from "@/lib/engine/types";
 
-function keyForStep(step: number): string {
-  return `${SCALE_ORDER[((step % 7) + 7) % 7]}/${Math.floor(step / 7)}`;
+type Alter = -1 | 0 | 1;
+
+function keyForStep(step: number, alter: Alter = 0): string {
+  const mark = alter === 1 ? "#" : alter === -1 ? "b" : "";
+  return `${SCALE_ORDER[((step % 7) + 7) % 7]}${mark}/${Math.floor(step / 7)}`;
+}
+
+/** "31", "31#", "31b" - the position, plus a mark when the note is altered. */
+function encode(step: number, alter: Alter): string {
+  return `${step}${alter === 1 ? "#" : alter === -1 ? "b" : ""}`;
+}
+
+function decode(value: string): { step: number; alter: Alter } {
+  const alter: Alter = value.endsWith("#") ? 1 : value.endsWith("b") ? -1 : 0;
+  return { step: parseInt(value, 10), alter };
 }
 
 function stepForKey(key: string): number {
@@ -49,6 +62,7 @@ export function StaffPicker({
   const origin = given ? stepForKey(given) : Math.round((min + max) / 2);
 
   const [pending, setPending] = useState<number | null>(null);
+  const [alter, setAlter] = useState<Alter>(0);
   const geometry = useRef<StaffGeometry | null>(null);
   const surface = useRef<HTMLDivElement>(null);
 
@@ -68,13 +82,13 @@ export function StaffPicker({
         move(-1);
       } else if (e.key === "Enter" && pending !== null) {
         e.preventDefault();
-        onAnswer(String(pending));
+        onAnswer(encode(pending, alter));
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locked, pending, onAnswer]);
+  }, [locked, pending, alter, onAnswer]);
 
   function tap(clientY: number) {
     const box = surface.current?.getBoundingClientRect();
@@ -86,21 +100,24 @@ export function StaffPicker({
     setPending(clamp(Math.round(topStep - ((y - g.topLineY) * 2) / g.spacing)));
   }
 
-  const chosen = value !== undefined ? Number(value) : null;
-  const correct = Number(accepted[0]);
+  const chosen = value !== undefined ? decode(value) : null;
+  const correct = decode(accepted[0]);
 
   const notes = given ? [{ key: given, color: STAFF_COLORS.ink }] : [];
   if (state === "idle") {
     if (pending !== null) {
-      notes.push({ key: keyForStep(pending), color: STAFF_COLORS.accent });
+      notes.push({ key: keyForStep(pending, alter), color: STAFF_COLORS.accent });
     }
   } else if (chosen !== null) {
     notes.push({
-      key: keyForStep(chosen),
+      key: keyForStep(chosen.step, chosen.alter),
       color: state === "correct" ? STAFF_COLORS.success : STAFF_COLORS.error,
     });
     if (state === "wrong") {
-      notes.push({ key: keyForStep(correct), color: STAFF_COLORS.success });
+      notes.push({
+        key: keyForStep(correct.step, correct.alter),
+        color: STAFF_COLORS.success,
+      });
     }
   }
 
@@ -140,10 +157,31 @@ export function StaffPicker({
               &darr; Down
             </button>
           </div>
+          {/* The sign is part of the answer, not a decoration on it. */}
+          <div className="grid grid-cols-3 gap-4">
+            {([-1, 0, 1] as Alter[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={alter === option}
+                aria-label={
+                  option === 1 ? "sharp" : option === -1 ? "flat" : "natural"
+                }
+                onClick={() => setAlter(option)}
+                className={`min-h-14 rounded-xl border text-lead transition-colors ${
+                  alter === option
+                    ? "border-accent bg-surface text-ink"
+                    : "border-line bg-surface text-muted hover:border-muted"
+                }`}
+              >
+                {option === 1 ? "♯" : option === -1 ? "♭" : "♮"}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             disabled={pending === null}
-            onClick={() => pending !== null && onAnswer(String(pending))}
+            onClick={() => pending !== null && onAnswer(encode(pending, alter))}
             className={`min-h-14 rounded-xl border text-lead ${
               pending === null
                 ? "border-line bg-surface text-muted"

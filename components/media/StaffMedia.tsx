@@ -80,9 +80,8 @@ export function StaffMedia({
     let cancelled = false;
 
     (async () => {
-      const { Renderer, Stave, StaveNote, Voice, Formatter } = await import(
-        "vexflow"
-      );
+      const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } =
+        await import("vexflow");
       if (cancelled || !host.current) return;
 
       const drawn = signature
@@ -122,6 +121,10 @@ export function StaffMedia({
 
         const staveNotes = drawn.map((n) => {
           const note = new StaveNote({ keys: [n.key], duration, clef });
+          // A key like "f#/4" positions the note but does not draw the sign.
+          // Parsed rather than searched: "b/4" is the note B, not a flat.
+          const mark = n.key.split("/")[0].slice(1);
+          if (mark) note.addModifier(new Accidental(mark), 0);
           note.setStyle({ fillStyle: n.color, strokeStyle: n.color });
           return note;
         });

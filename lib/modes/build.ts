@@ -4,12 +4,15 @@ import { intervalsFor, toneLabel } from "@/lib/data/intervals";
 import {
   DIFFICULTY_RANGE,
   SCALE_ORDER,
-  acceptedNames,
+  acceptedAlteredNames,
+  alteredName,
+  answerValue,
   noteName,
   pitchesBetween,
   semitone,
   step,
   vexKey,
+  type AlteredPitch,
   type Clef,
   type Pitch,
 } from "@/lib/data/notes";
@@ -68,78 +71,87 @@ export const buildMode: Mode = {
       }));
 
       for (const start of range) {
-        for (const target of range) {
-          const distance = semitone(target) - semitone(start);
-          // Unisons are not a drill, and nothing wider than an octave.
-          if (distance === 0 || Math.abs(distance) > 12) continue;
+        for (const interval of rows) {
+          if (interval.letterSpan === null || interval.tones === 0) continue;
 
-          // Both halves have to match: three tones across four letters is a
-          // kvarta mugdelet, across five letters a kvinta muktenet. The triton
-          // has no letter span and is never the answer here.
-          const letters = Math.abs(step(target) - step(start));
-          const interval = rows.find(
-            (i) => i.tones === Math.abs(distance) / 2 && i.letterSpan === letters,
-          );
-          if (!interval) continue;
+          for (const up of [true, false]) {
+            // The letters fix where the note sits; the accidental then makes
+            // the distance right. That is the whole exercise, and it is why
+            // naturals-only was too easy.
+            const targetStep = up
+              ? step(start) + interval.letterSpan
+              : step(start) - interval.letterSpan;
+            const natural: Pitch = {
+              letter: SCALE_ORDER[((targetStep % 7) + 7) % 7],
+              octave: Math.floor(targetStep / 7),
+            };
+            if (!positions.some((p) => p.value === targetStep)) continue;
 
-          const up = distance > 0;
-          const direction = up ? "above" : "below";
-          const startName = noteName(start, settings.naming);
-          const targetName = noteName(target, settings.naming);
-          const spelled = `${target.letter.toUpperCase()}${target.octave}`;
+            const wanted = up
+              ? semitone(start) + interval.tones * 2
+              : semitone(start) - interval.tones * 2;
+            const alter = wanted - semitone(natural);
+            // A double sharp or double flat is beyond what this drill spells.
+            if (alter < -1 || alter > 1) continue;
+            const target: AlteredPitch = { ...natural, alter: alter as -1 | 0 | 1 };
 
-          questions.push({
-            // Stable across every setting: it is the same exercise however it
-            // is named or answered.
-            id: `build:${clef}:${start.letter}${start.octave}:${
-              up ? "up" : "down"
-            }:${interval.id}`,
-            modeId: BUILD_MODE_ID,
-            prompt: interval.name,
-            promptSub: `${direction} the note shown`,
-            // In typed mode the staff is the prompt; the picker draws its own.
-            media:
-              settings.buildStyle === "typed"
-                ? { kind: "staff", payload: { clef, notes: vexKey(start) } }
-                : undefined,
-            // Downwards is the harder direction, and gets asked as often.
-            weight: interval.weight + (up ? 0 : 0.3),
-            topics: ["building intervals"],
-            parts: [
-              {
-                id: "note",
-                label: up ? "The note above" : "The note below",
-                input:
-                  settings.buildStyle === "typed"
-                    ? {
-                        kind: "text",
-                        placeholder:
-                          settings.naming === "solfege" ? "do re mi…" : "A–G",
-                      }
-                    : {
-                        kind: "value",
-                        options: positions,
-                        render: {
-                          kind: "staff-picker",
-                          payload: { clef, given: vexKey(start) },
+            const direction = up ? "above" : "below";
+            const startName = noteName(start, settings.naming);
+            const targetName = alteredName(target, settings.naming);
+
+            questions.push({
+              id: `build:${clef}:${start.letter}${start.octave}:${
+                up ? "up" : "down"
+              }:${interval.id}`,
+              modeId: BUILD_MODE_ID,
+              prompt: interval.name,
+              promptSub: `${direction} the note shown`,
+              media:
+                settings.buildStyle === "typed"
+                  ? { kind: "staff", payload: { clef, notes: vexKey(start) } }
+                  : undefined,
+              weight: interval.weight + (up ? 0 : 0.3) + (alter === 0 ? 0 : 0.2),
+              topics: ["building intervals"],
+              parts: [
+                {
+                  id: "note",
+                  label: up ? "The note above" : "The note below",
+                  input:
+                    settings.buildStyle === "typed"
+                      ? {
+                          kind: "text",
+                          placeholder:
+                            settings.naming === "solfege" ? "do, fa diez…" : "A–G, F#",
+                        }
+                      : {
+                          kind: "value",
+                          options: positions,
+                          render: {
+                            kind: "staff-picker",
+                            payload: { clef, given: vexKey(start) },
+                          },
                         },
-                      },
-                accepted:
-                  settings.buildStyle === "typed"
-                    ? acceptedNames(target)
-                    : [String(step(target))],
-                display: `${targetName} (${spelled})`,
-                reason: `A ${interval.name} is ${toneLabel(
-                  interval.tones,
-                )} tones, so ${direction} ${startName} it lands on ${targetName}. Count the letters: ${letterRun(
-                  start,
-                  target,
-                  settings.naming,
-                )}.`,
-                topics: ["building intervals", interval.family, `${clef} clef`],
-              },
-            ],
-          });
+                  accepted:
+                    settings.buildStyle === "typed"
+                      ? acceptedAlteredNames(target)
+                      : [answerValue(target)],
+                  display: `${targetName} (${target.letter.toUpperCase()}${
+                    target.alter === 1 ? "#" : target.alter === -1 ? "b" : ""
+                  }${target.octave})`,
+                  reason: `A ${interval.name} is ${
+                    interval.letterSpan + 1
+                  } letters and ${toneLabel(
+                    interval.tones,
+                  )} tones, so ${direction} ${startName} it lands on ${targetName}. Count the letters: ${letterRun(
+                    start,
+                    natural,
+                    settings.naming,
+                  )}.`,
+                  topics: ["building intervals", interval.family, `${clef} clef`],
+                },
+              ],
+            });
+          }
         }
       }
     }

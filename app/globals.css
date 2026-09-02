@@ -7,7 +7,7 @@
 @theme {
   --color-ground: #08080a;
   --color-surface: #121216;
-  --color-line: #26262e;
+  --color-line: #2c2c36;
   --color-ink: #f0f0f4;
   --color-muted: #8a8a96;
   --color-accent: #7c5cff;
@@ -44,6 +44,34 @@ body {
 
 button {
   -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Used on content that replaces other content in place - a new question, a
+   summary - so the change is noticed without anything moving on the page. */
+.animate-rise {
+  animation: rise 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Keyboard focus is visible everywhere; pointer focus stays quiet. */

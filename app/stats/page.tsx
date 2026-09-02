@@ -85,13 +85,13 @@ export default function StatsPage() {
           return (
             <div
               key={mode.id}
-              className="flex items-baseline justify-between rounded-xl border border-line bg-surface p-4"
+              className="flex min-h-14 items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3"
             >
-              <span className="text-lead">{mode.subtitle}</span>
-              <span className="text-content text-muted">
+              <span className="text-content text-ink">{mode.subtitle}</span>
+              <span className="shrink-0 text-content text-muted">
                 {s
-                  ? `${Math.round(accuracy(s.seen, s.correct) * 100)}% of ${s.seen} · best ${s.bestStreak}`
-                  : "no answers yet"}
+                  ? `${Math.round(accuracy(s.seen, s.correct) * 100)}% of ${s.seen}`
+                  : "not started"}
               </span>
             </div>
           );
@@ -108,9 +108,9 @@ export default function StatsPage() {
           weak.slice(0, 5).map((t) => (
             <div
               key={t.topic}
-              className="flex items-baseline justify-between rounded-xl border border-line bg-surface p-4"
+              className="flex min-h-14 items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3"
             >
-              <span className="text-content">{t.topic}</span>
+              <span className="text-content text-ink">{t.topic}</span>
               <span className="text-content text-muted">
                 {Math.round(t.accuracy * 100)}% of {t.seen}
               </span>

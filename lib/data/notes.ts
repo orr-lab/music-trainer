@@ -66,6 +66,63 @@ export function acceptedNames(p: Pitch): string[] {
   return [p.letter, SOLFEGE[p.letter], ...(ALTERNATES[p.letter] ?? [])];
 }
 
+/**
+ * A note that may carry an accidental. The staff position comes from the
+ * letter, the sound from the letter plus the alteration - which is exactly the
+ * distinction that makes fa diez and sol bemol different notes in the same
+ * place.
+ */
+export type Alter = -1 | 0 | 1;
+
+export interface AlteredPitch extends Pitch {
+  alter: Alter;
+}
+
+export function alterSuffix(alter: Alter): string {
+  return alter === 1 ? "#" : alter === -1 ? "b" : "";
+}
+
+export function vexKeyAltered(p: AlteredPitch): string {
+  return `${p.letter}${alterSuffix(p.alter)}/${p.octave}`;
+}
+
+/** "fa diez" / "F#". */
+export function alteredName(
+  p: AlteredPitch,
+  naming: "solfege" | "letters",
+): string {
+  const base = noteName(p, naming);
+  if (p.alter === 0) return base;
+  if (naming === "letters") return base + alterSuffix(p.alter);
+  return `${base} ${p.alter === 1 ? "diez" : "bemol"}`;
+}
+
+/** Everything a typed answer may spell it as. */
+export function acceptedAlteredNames(p: AlteredPitch): string[] {
+  if (p.alter === 0) return acceptedNames(p);
+  const mark = alterSuffix(p.alter);
+  const word = p.alter === 1 ? "diez" : "bemol";
+  return acceptedNames(p).flatMap((base) => [
+    `${base}${mark}`,
+    `${base} ${mark}`,
+    `${base} ${word}`,
+  ]);
+}
+
+/**
+ * How an answer on the staff is encoded: the position, plus a mark when the
+ * note is altered. A natural is bare, so the answers that existed before an
+ * accidental could be chosen still read the same.
+ */
+export function answerValue(p: AlteredPitch): string {
+  return `${step(p)}${alterSuffix(p.alter)}`;
+}
+
+/** The sound of an altered note, in semitones. */
+export function alteredSemitone(p: AlteredPitch): number {
+  return semitone(p) + p.alter;
+}
+
 /** The five lines, as diatonic steps: bottom line and top line. */
 export const STAFF_LINES: Record<Clef, { bottom: number; top: number }> = {
   // E4 up to F5

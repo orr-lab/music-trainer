@@ -8,6 +8,17 @@ import {
   type IntervalRow,
 } from "@/lib/data/intervals";
 import { readSettings } from "@/lib/engine/settings";
+import {
+  DIFFICULTY_RANGE,
+  SCALE_ORDER,
+  alteredName,
+  noteName,
+  pitchesBetween,
+  semitone,
+  step,
+  vexKey,
+  vexKeyAltered,
+} from "@/lib/data/notes";
 
 export const INTERVALS_MODE_ID = "intervals";
 
@@ -55,64 +66,91 @@ function forwardQuestions(rows: IntervalRow[]): Question[] {
 }
 
 /**
- * Reverse: given a size in tones, name the interval.
+ * The other direction: two notes on a staff, name the interval between them.
  *
- * One question per size rather than per interval, because several intervals
- * share a size - 3 tones is a kvarta mugdelet, a kvinta muktenet or a triton.
- * The distractors are all other sizes, so exactly one option is right, and the
- * feedback names the other spellings of the same distance.
+ * Not "how many tones" - a size alone does not name an interval, and asking it
+ * that way teaches the wrong thing. Written out, the letters give the number
+ * and the accidentals give the quality, which is the actual reading skill. The
+ * distractors include the interval that sounds identical but is spelled
+ * differently, so the letters have to be counted rather than the semitones.
  */
-function reverseQuestions(rows: IntervalRow[]): Question[] {
-  const sizes = toneValues(rows);
+function readingQuestions(rows: IntervalRow[]): Question[] {
+  const questions: Question[] = [];
 
-  return sizes.map((tones) => {
-    const named = rows.filter((i) => i.tones === tones);
-    const row = named[0];
-    const others = named.slice(1);
+  for (const clef of ["treble", "bass"] as const) {
+    const range = pitchesBetween(...DIFFICULTY_RANGE.easy[clef]);
 
-    const distractors = rows.filter((i) => i.tones !== tones)
-      .sort(
-        (a, b) =>
-          Math.abs(a.tones - tones) - Math.abs(b.tones - tones) ||
-          a.tones - b.tones,
-      )
-      .filter(
-        (candidate, index, list) =>
-          list.findIndex((other) => other.tones === candidate.tones) === index,
-      )
-      .slice(0, 3);
+    for (const low of range) {
+      for (const interval of rows) {
+        if (interval.letterSpan === null || interval.tones === 0) continue;
 
-    const options = [row, ...distractors]
-      .sort((a, b) => a.tones - b.tones)
-      .map((i) => ({ id: i.id, label: i.name }));
+        const highStep = step(low) + interval.letterSpan;
+        const letter = SCALE_ORDER[((highStep % 7) + 7) % 7];
+        const octave = Math.floor(highStep / 7);
+        const natural = { letter, octave };
+        if (step(natural) > step(range[range.length - 1]) + 2) continue;
 
-    return {
-      id: `intervals:reverse:${tones}`,
-      modeId: INTERVALS_MODE_ID,
-      prompt: `${toneLabel(tones)} tones`,
-      promptSub: "Which interval is this?",
-      weight: row.weight + 0.2,
-      topics: [row.family],
-      parts: [
-        {
-          id: "name",
-          label: "Interval",
-          input: { kind: "choice", options },
-          accepted: named.map((i) => i.id),
-          display: named.map((i) => i.name).join(" or "),
-          reason:
-            others.length === 0
-              ? row.note
-              : `${toneLabel(tones)} tones is a ${row.name} - or ${others
-                  .map((i) => i.name)
-                  .join(" or ")}, which is the same distance spelled with
-                  different letters.`.replace(/\s+/g, " "),
-          shuffle: true,
-          topics: ["naming intervals", row.family],
-        },
-      ],
-    };
-  });
+        const alter = semitone(low) + interval.tones * 2 - semitone(natural);
+        if (alter < -1 || alter > 1) continue;
+        const high = { ...natural, alter: alter as -1 | 0 | 1 };
+
+        // Same size spelled another way, then the neighbouring sizes.
+        const twin = rows.find(
+          (i) => i.tones === interval.tones && i.id !== interval.id && i.letterSpan !== null,
+        );
+        const near = rows
+          .filter(
+            (i) =>
+              i.letterSpan !== null &&
+              i.id !== interval.id &&
+              i.id !== twin?.id &&
+              i.tones !== 0,
+          )
+          .sort(
+            (a, b) =>
+              Math.abs(a.tones - interval.tones) - Math.abs(b.tones - interval.tones),
+          );
+        const choices = [interval, ...(twin ? [twin] : []), ...near].slice(0, 4);
+
+        questions.push({
+          id: `intervals:reading:${clef}:${low.letter}${low.octave}:${interval.id}`,
+          modeId: INTERVALS_MODE_ID,
+          prompt: "Which interval is this?",
+          media: {
+            kind: "staff",
+            payload: {
+              clef,
+              notes: `${vexKey(low)},${vexKeyAltered(high)}`,
+            },
+          },
+          weight: interval.weight + 0.2,
+          topics: [interval.family],
+          parts: [
+            {
+              id: "name",
+              label: "Interval",
+              input: {
+                kind: "choice",
+                options: choices.map((i) => ({ id: i.id, label: i.name })),
+              },
+              accepted: [interval.id],
+              display: interval.name,
+              reason: `${noteName(low, "solfege")} up to ${alteredName(
+                high,
+                "solfege",
+              )} is ${interval.letterSpan + 1} letters and ${toneLabel(
+                interval.tones,
+              )} tones: a ${interval.name}.`,
+              shuffle: true,
+              topics: ["reading intervals", interval.family],
+            },
+          ],
+        });
+      }
+    }
+  }
+
+  return questions;
 }
 
 export const intervalsMode: Mode = {
@@ -123,6 +161,6 @@ export const intervalsMode: Mode = {
   blurb: "Size in tones and classification, both directions.",
   pool: (raw) => {
     const rows = intervalsFor(readSettings(raw).intervalSet);
-    return [...forwardQuestions(rows), ...reverseQuestions(rows)];
+    return [...forwardQuestions(rows), ...readingQuestions(rows)];
   },
 };

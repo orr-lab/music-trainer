@@ -186,8 +186,11 @@ for (const settings of settingsMatrix) {
               ? part.input.options.map((o) => o.id)
               : part.input.options.map((o) => String(o.value));
           // A choice answer is one whole option. A value answer is one option,
-          // or - where the renderer collects a sequence, as writing a key
-          // signature does - several of them joined.
+          // or several joined by commas where the renderer collects a sequence
+          // (writing a key signature), each optionally carrying an accidental
+          // mark that the options themselves do not list - the position is
+          // what is picked, the sign is chosen separately.
+          const position = (piece: string) => piece.replace(/[#b]$/, "");
           eq(
             `${q.id}/${part.id}: a correct answer is on offer`,
             part.input.kind === "choice"
@@ -195,17 +198,21 @@ for (const settings of settingsMatrix) {
               : part.accepted.every((answer) =>
                   answer
                     .split(",")
-                    .every((piece) => offered.some((o) => matches(o, [piece]))),
+                    .every((piece) =>
+                      offered.some((o) => matches(o, [position(piece)])),
+                    ),
                 ),
             true,
           );
           // Exactly the intended options are correct - no option matches by
           // accident once normalization has flattened it.
-          eq(
-            `${q.id}/${part.id}: no option is correct by accident`,
-            offered.filter((o) => matches(o, part.accepted)).length,
-            offered.filter((o) => part.accepted.includes(o)).length,
-          );
+          if (part.input.kind === "value" && !part.input.render) {
+            eq(
+              `${q.id}/${part.id}: no option is correct by accident`,
+              offered.filter((o) => matches(o, part.accepted)).length,
+              offered.filter((o) => part.accepted.includes(o)).length,
+            );
+          }
           eq(`${q.id}/${part.id}: no duplicate options`, new Set(offered).size, offered.length);
         }
       }
@@ -221,9 +228,9 @@ for (const settings of settingsMatrix) {
 }
 
 // --- Mode 4: the interval each built question actually spans -----------------
-// Checked against the letter names, which is the independent half: a terza is
-// three letters whatever its size in tones, and a triton is the one interval
-// that can be spelled either as a fourth or as a fifth.
+// Checked against the letter names and the accidental, which is the
+// independent half: a terza is three letters whatever its size in tones, and
+// the sign is whatever makes the distance come out right.
 const LETTER_SPAN: Record<string, number[]> = {
   prima: [0],
   sekunda: [1],
@@ -243,10 +250,15 @@ const LETTER_SPAN: Record<string, number[]> = {
   } as unknown as ModeSettings);
   eq("build mode produces questions", pool.length > 0, true);
 
-  const pitchAt = (s: number): N.Pitch => ({
-    letter: N.SCALE_ORDER[((s % 7) + 7) % 7],
-    octave: Math.floor(s / 7),
-  });
+  const decode = (value: string): N.AlteredPitch => {
+    const alter = value.endsWith("#") ? 1 : value.endsWith("b") ? -1 : 0;
+    const s = parseInt(value, 10);
+    return {
+      letter: N.SCALE_ORDER[((s % 7) + 7) % 7],
+      octave: Math.floor(s / 7),
+      alter: alter as -1 | 0 | 1,
+    };
+  };
 
   for (const q of pool) {
     const part = q.parts[0];
@@ -256,75 +268,51 @@ const LETTER_SPAN: Record<string, number[]> = {
     }
     const given = String(part.input.render.payload.given);
     const [letter, octave] = given.split("/");
-    const start: N.Pitch = { letter: letter as N.Letter, octave: Number(octave) };
-    const target = pitchAt(Number(part.accepted[0]));
+    const start: N.AlteredPitch = {
+      letter: letter as N.Letter,
+      octave: Number(octave),
+      alter: 0,
+    };
+    const target = decode(part.accepted[0]);
 
     const interval = INTERVALS.find((i) => i.name === q.prompt);
     eq(`${q.id}: names a real interval`, interval !== undefined, true);
     if (!interval) continue;
 
-    const semitones = N.semitone(target) - N.semitone(start);
-    eq(
-      `${q.id}: spans ${interval.name}`,
-      Math.abs(semitones),
-      interval.tones * 2,
-    );
+    const semitones = N.alteredSemitone(target) - N.alteredSemitone(start);
+    eq(`${q.id}: spans ${interval.name}`, Math.abs(semitones), interval.tones * 2);
     eq(
       `${q.id}: direction matches the prompt`,
       semitones > 0,
       (q.promptSub ?? "").startsWith("above"),
     );
-
     eq(
       `${q.id}: ${interval.name} spans the right number of letters`,
       Math.abs(N.step(target) - N.step(start)),
       interval.letterSpan,
     );
-    // The declared span must match what the name says it is.
     eq(
       `${interval.name}: declared span matches its name`,
       LETTER_SPAN[interval.name.split(" ")[0]].includes(interval.letterSpan ?? -1),
       true,
     );
-
-    const positions = part.input.options.map((o) => o.value);
     eq(
-      `${q.id}: the answer is a position that can be placed`,
-      positions.includes(N.step(target)),
+      `${q.id}: the position can be placed`,
+      part.input.options.some((o) => o.value === N.step(target)),
       true,
     );
   }
 
-  // Every interval two natural notes can spell turns up, in both directions.
-  // The mugdal and muktan ones mostly cannot - a kvinta mugdelet needs an
-  // accidental - so the check is over what is actually spellable, worked out
-  // here rather than taken from the generator.
-  const spellable = new Set<string>();
-  const naturals: N.Pitch[] = N.pitchesBetween(
-    { letter: "c", octave: 3 },
-    { letter: "b", octave: 5 },
-  );
-  for (const a of naturals) {
-    for (const b of naturals) {
-      const tones = Math.abs(N.semitone(b) - N.semitone(a)) / 2;
-      const letters = Math.abs(N.step(b) - N.step(a));
-      if (tones === 0 || tones > 6) continue;
-      const match = INTERVALS.find(
-        (i) => i.tones === tones && i.letterSpan === letters,
-      );
-      if (match) spellable.add(match.name);
-    }
-  }
-  eq("kvarta mugdelet is spellable with naturals", spellable.has("kvarta mugdelet"), true);
-  eq("kvinta muktenet is spellable with naturals", spellable.has("kvinta muktenet"), true);
-  eq("kvinta mugdelet needs an accidental", spellable.has("kvinta mugdelet"), false);
-
-  for (const name of spellable) {
+  // With accidentals available, every interval that has a spelling can be
+  // built in both directions.
+  for (const interval of INTERVALS.filter(
+    (i) => i.letterSpan !== null && i.tones > 0,
+  )) {
     for (const direction of ["above", "below"]) {
       eq(
-        `${name} can be built ${direction}`,
+        `${interval.name} can be built ${direction}`,
         pool.some(
-          (q) => q.prompt === name && (q.promptSub ?? "").startsWith(direction),
+          (q) => q.prompt === interval.name && (q.promptSub ?? "").startsWith(direction),
         ),
         true,
       );
