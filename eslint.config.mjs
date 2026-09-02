@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // macOS writes these sidecar files on the exFAT volume this repo lives on.
+    "**/._*",
   ]),
 ]);
 

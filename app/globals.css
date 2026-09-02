@@ -1,26 +1,47 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Dark theme only. Near-black ground, one accent, one success, one error.
+ * Nothing else gets a color - if a new hue shows up, it is a bug.
+ */
+@theme {
+  --color-ground: #08080a;
+  --color-surface: #121216;
+  --color-line: #26262e;
+  --color-ink: #f0f0f4;
+  --color-muted: #8a8a96;
+  --color-accent: #7c5cff;
+  --color-success: #35d07f;
+  --color-error: #ff5a5a;
+
+  /* Two content sizes plus one display size for the question itself. */
+  --text-content: 1rem;
+  --text-content--line-height: 1.6;
+  --text-lead: 1.25rem;
+  --text-lead--line-height: 1.4;
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.15;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  background-color: var(--color-ground);
+  color: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Never bounce-scroll a drill screen on mobile. */
+  overscroll-behavior-y: none;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --text-display: 3.5rem;
+  }
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
 }
