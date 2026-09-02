@@ -99,6 +99,27 @@ export function PianoKeyboard({
     >
       {WHITE.map((s) => key(s, false))}
       {BLACK.map((s) => key(s, true))}
+      {/*
+        Black keys are drawn over the top of the white ones, so a filled white
+        key shows up as two thin slivers and reads as a black key. The dot sits
+        in the part of the key that is never covered.
+      */}
+      {marks.map((mark) => {
+        const black = isBlack(mark.semitone);
+        const x = black
+          ? blackX(mark.semitone) + BLACK_W / 2
+          : WHITE.indexOf(mark.semitone) * KEY_W + KEY_W / 2;
+        if (Number.isNaN(x)) return null;
+        return (
+          <circle
+            key={`dot-${mark.semitone}`}
+            cx={x}
+            cy={black ? BLACK_H - 14 : WHITE_H - 14}
+            r={5}
+            fill="#08080a"
+          />
+        );
+      })}
       {/* Every C is labelled, so the octave you are in is never a guess. */}
       {WHITE.filter((s) => s % 12 === 0).map((s) => (
         <text
