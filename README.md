@@ -177,12 +177,22 @@ browser's storage, so export the JSON before clearing site data.
 
 ## Deploy
 
-Zero config on Vercel.
+Live at **https://learntheory.orrknaan.com**, from
+**https://github.com/orr-lab/music-trainer**.
+
+The Vercel project is connected to the repo, so pushing to `main` deploys:
 
 ```bash
-git remote add origin git@github.com:<you>/<repo>.git
-git push -u origin main
+git push
 ```
 
-Then import the repo at vercel.com/new and deploy - no environment variables, no
-build settings to change. Every push to `main` redeploys.
+To deploy without pushing, or to check a build before it goes out:
+
+```bash
+vercel --prod
+```
+
+Zero config - no environment variables, no build settings. The one thing worth
+remembering is that all progress lives in the browser on the device, so it does
+not follow you between phone and laptop. Export the JSON from the Stats page
+before clearing site data.
