@@ -25,7 +25,7 @@ export default function Icon() {
               top: 55,
               width: 64,
               height: 47,
-              borderRadius: 999,
+              borderRadius: "50%",
               background: "#7c5cff",
               transform: "rotate(-20deg)",
             }}
