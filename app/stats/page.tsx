@@ -16,6 +16,7 @@ export default function StatsPage() {
   const { progress, ready, replace, reset } = useProgress();
   const fileRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   function download() {
     const blob = new Blob([exportProgress(progress)], {
@@ -145,17 +146,25 @@ export default function StatsPage() {
             e.target.value = "";
           }}
         />
+        {/* Two taps rather than a browser dialog - no modals anywhere. */}
         <button
           type="button"
           onClick={() => {
-            if (confirm("Erase all progress? This cannot be undone.")) {
+            if (confirming) {
               reset();
+              setConfirming(false);
               setNote("Progress erased.");
+            } else {
+              setConfirming(true);
+              setNote(null);
             }
           }}
-          className="min-h-14 rounded-xl border border-line bg-surface text-lead text-error active:border-error"
+          onBlur={() => setConfirming(false)}
+          className={`min-h-14 rounded-xl border bg-surface text-lead text-error ${
+            confirming ? "border-error" : "border-line active:border-error"
+          }`}
         >
-          Reset everything
+          {confirming ? "Tap again to erase everything" : "Reset everything"}
         </button>
         {note ? <p className="text-content text-muted">{note}</p> : null}
       </section>

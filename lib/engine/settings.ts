@@ -1,0 +1,43 @@
+import type { ModeSettings } from "./types";
+
+/**
+ * User settings. Stored loosely in `progress.settings` so the engine never has
+ * to know what any of them mean; modes read them through `readSettings`.
+ */
+export interface AppSettings {
+  /** Note and key names: "sol" / "sol mazhor", or "G" / "G major". */
+  naming: "solfege" | "letters";
+  /** Which clefs Mode 2 draws from. */
+  clefs: "treble" | "bass" | "both";
+  /** How far outside the staff Mode 2 goes. */
+  staffDifficulty: "easy" | "medium" | "hard";
+  /** Tap one of seven names, or type the answer. */
+  answerStyle: "buttons" | "typing";
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  naming: "solfege",
+  clefs: "both",
+  staffDifficulty: "easy",
+  answerStyle: "buttons",
+};
+
+function pick<K extends keyof AppSettings>(
+  raw: ModeSettings,
+  key: K,
+  allowed: readonly AppSettings[K][],
+): AppSettings[K] {
+  const value = raw[key];
+  return allowed.includes(value as AppSettings[K])
+    ? (value as AppSettings[K])
+    : DEFAULT_SETTINGS[key];
+}
+
+export function readSettings(raw: ModeSettings): AppSettings {
+  return {
+    naming: pick(raw, "naming", ["solfege", "letters"]),
+    clefs: pick(raw, "clefs", ["treble", "bass", "both"]),
+    staffDifficulty: pick(raw, "staffDifficulty", ["easy", "medium", "hard"]),
+    answerStyle: pick(raw, "answerStyle", ["buttons", "typing"]),
+  };
+}

@@ -14,7 +14,14 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // macOS writes these sidecar files on the exFAT volume this repo lives on.
     "**/._*",
+    // Compiled output of `npm run verify:data`.
+    ".verify/**",
   ]),
+  {
+    // Node CLI scripts, run directly rather than bundled.
+    files: ["scripts/**/*.js"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
 ]);
 
 export default eslintConfig;

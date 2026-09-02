@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": ".verify",
+    "types": ["node"]
+  },
+  "include": ["scripts/verify-data.ts", "lib/**/*.ts"]
+}

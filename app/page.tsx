@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useProgress } from "@/components/useProgress";
 import { accuracy, liveDailyStreak } from "@/lib/engine/progress";
-import { MODES } from "@/lib/modes/registry";
+import { MIXED_MODE_ID, MODES } from "@/lib/modes/registry";
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -11,6 +11,17 @@ function Stat({ label, value }: { label: string; value: string }) {
       <span className="text-lead text-ink">{value}</span>
       <span className="text-content text-muted">{label}</span>
     </div>
+  );
+}
+
+function SecondaryLink({ href, children }: { href: string; children: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-14 items-center justify-center rounded-xl border border-line bg-surface text-lead active:border-accent"
+    >
+      {children}
+    </Link>
   );
 }
 
@@ -29,17 +40,26 @@ export default function Home() {
 
       <section className="grid grid-cols-3 gap-4 rounded-xl border border-line bg-surface p-4">
         <Stat label="XP" value={show(progress.xp)} />
-        <Stat
-          label="Day streak"
-          value={show(liveDailyStreak(progress))}
-        />
+        <Stat label="Day streak" value={show(liveDailyStreak(progress))} />
         <Stat label="Best streak" value={show(progress.bestStreak)} />
       </section>
 
       <section className="flex flex-col gap-4">
+        <Link
+          href={`/drill/${MIXED_MODE_ID}`}
+          className="flex min-h-14 flex-col gap-1 rounded-xl border border-accent bg-surface p-4"
+        >
+          <span className="text-lead">Ta&apos;arovet</span>
+          <span className="text-content text-muted">
+            Everything at once - the one to open daily.
+          </span>
+        </Link>
+
         {MODES.map((mode) => {
           const stat = progress.modes[mode.id];
-          const acc = stat ? Math.round(accuracy(stat.seen, stat.correct) * 100) : 0;
+          const acc = stat
+            ? Math.round(accuracy(stat.seen, stat.correct) * 100)
+            : 0;
           return (
             <Link
               key={mode.id}
@@ -59,12 +79,9 @@ export default function Home() {
       </section>
 
       <nav className="flex flex-col gap-4">
-        <Link
-          href="/stats"
-          className="flex min-h-14 items-center justify-center rounded-xl border border-line bg-surface text-lead active:border-accent"
-        >
-          Stats
-        </Link>
+        <SecondaryLink href="/circle">Circle reference</SecondaryLink>
+        <SecondaryLink href="/stats">Stats</SecondaryLink>
+        <SecondaryLink href="/settings">Settings</SecondaryLink>
       </nav>
     </main>
   );

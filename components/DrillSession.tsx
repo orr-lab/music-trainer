@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnswerInput, type PartState } from "@/components/AnswerInput";
+import { QuestionMediaView } from "@/components/media";
 import { useProgress } from "@/components/useProgress";
 import { gradeQuestion, xpFor } from "@/lib/engine/grade";
+import { present } from "@/lib/engine/present";
 import { selectQuestion } from "@/lib/engine/select";
 import type { Question, QuestionResult } from "@/lib/engine/types";
 import { getMode } from "@/lib/modes/registry";
@@ -35,7 +37,12 @@ export function DrillSession({ modeId }: { modeId: string }) {
   const [session, setSession] = useState({ asked: 0, correct: 0 });
 
   const advance = useCallback(() => {
-    setQuestion((prev) => selectQuestion(pool, progressRef.current, prev?.id));
+    setQuestion((prev) => {
+      const next = selectQuestion(pool, progressRef.current, prev ?? undefined);
+      // Shuffle once, here - not on every render, or the options would move
+      // under the user's thumb.
+      return next ? present(next) : null;
+    });
     setAnswers({});
     setResult(null);
   }, [pool]);
@@ -130,10 +137,7 @@ export function DrillSession({ modeId }: { modeId: string }) {
         </Link>
         <div className="flex gap-4">
           <span>
-            Streak{" "}
-            <span className="text-ink">
-              {progress.modes[mode.id]?.currentStreak ?? 0}
-            </span>
+            Streak <span className="text-ink">{progress.currentStreak}</span>
           </span>
           <span>
             Session{" "}
@@ -147,9 +151,16 @@ export function DrillSession({ modeId }: { modeId: string }) {
       {question ? (
         <div className="flex flex-1 flex-col gap-8 pt-8 pb-16">
           <div className="text-center">
-            <h1 className="text-display font-semibold tracking-tight">
-              {question.prompt}
-            </h1>
+            {question.media ? (
+              <>
+                <QuestionMediaView media={question.media} />
+                <h1 className="mt-4 text-lead">{question.prompt}</h1>
+              </>
+            ) : (
+              <h1 className="text-display font-semibold tracking-tight">
+                {question.prompt}
+              </h1>
+            )}
             {question.promptSub ? (
               <p className="mt-4 text-content text-muted">{question.promptSub}</p>
             ) : null}
@@ -174,8 +185,9 @@ export function DrillSession({ modeId }: { modeId: string }) {
             ))}
           </div>
 
-          {/* Fixed height: feedback never pushes the answers around. */}
-          <div className="min-h-32">
+          {/* Reserved space, and always below the answers: feedback never
+              pushes the buttons around. */}
+          <div className="min-h-32" aria-live="polite">
             {result ? (
               result.correct ? (
                 <p className="text-lead text-success">

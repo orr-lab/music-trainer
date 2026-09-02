@@ -46,6 +46,23 @@ export interface AnswerPart {
   reason?: string;
   /** Overrides the question's topics for stats purposes. */
   topics?: string[];
+  /**
+   * Shuffle the options each time the question is served. Set it where a fixed
+   * order would let the answer be memorised by position; leave it off where a
+   * stable order makes drilling faster (an ascending scale, a fixed triad of
+   * classifications).
+   */
+  shuffle?: boolean;
+}
+
+/**
+ * Something to render above the prompt. The engine treats this as opaque: the
+ * UI keeps a registry of renderers by `kind`, so a mode can show a staff, a
+ * diagram or anything else without the engine learning what those are.
+ */
+export interface QuestionMedia {
+  kind: string;
+  payload: Record<string, string | number | boolean>;
 }
 
 export interface Question {
@@ -54,6 +71,7 @@ export interface Question {
   modeId: string;
   prompt: string;
   promptSub?: string;
+  media?: QuestionMedia;
   parts: AnswerPart[];
   /** Difficulty weight, scales XP and base selection frequency. */
   weight: number;

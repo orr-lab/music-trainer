@@ -75,6 +75,8 @@ export function AnswerInput({
           value={state === "idle" ? draft : (value ?? "")}
           onChange={(e) => setDraft(e.target.value)}
           disabled={locked}
+          // Typing mode is opt-in, so raising the keyboard is what was asked for.
+          autoFocus
           autoComplete="off"
           autoCapitalize="off"
           autoCorrect="off"
@@ -95,11 +97,16 @@ export function AnswerInput({
           value: String(o.value),
         }));
 
-  // 13 tone values need a tighter grid than three full-width choices.
-  const layout =
-    part.input.kind === "value"
-      ? "grid-cols-5 gap-3 sm:grid-cols-7 sm:gap-4"
-      : "grid-cols-1 gap-4";
+  /*
+   * Long labels get their own row; a handful of short ones (the tone scale,
+   * seven note names) go in a grid so the whole question stays on one screen.
+   * Driven by the options themselves, so the engine keeps its ignorance.
+   */
+  const compact =
+    options.length > 4 && options.every((o) => o.label.length <= 6);
+  const layout = compact
+    ? "grid-cols-5 gap-3 sm:grid-cols-7 sm:gap-4"
+    : "grid-cols-1 gap-4";
 
   return (
     <div className={`grid ${layout}`}>

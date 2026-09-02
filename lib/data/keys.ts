@@ -1,0 +1,140 @@
+/**
+ * Ma'agal ha-kvintot (circle of fifths) - content for Mode 3 and the reference
+ * diagram. All fifteen major keys, in line-of-fifths order.
+ */
+
+export type Naming = "solfege" | "letters";
+
+export interface Tonic {
+  letter: "c" | "d" | "e" | "f" | "g" | "a" | "b";
+  /** "" natural, "#" diez, "b" bemol. */
+  accidental: "" | "#" | "b";
+}
+
+const SOLFEGE: Record<Tonic["letter"], string> = {
+  c: "do",
+  d: "re",
+  e: "mi",
+  f: "fa",
+  g: "sol",
+  a: "la",
+  b: "si",
+};
+
+export function tonicName(t: Tonic, naming: Naming): string {
+  if (naming === "letters") {
+    return t.letter.toUpperCase() + t.accidental;
+  }
+  const suffix = t.accidental === "#" ? " diez" : t.accidental === "b" ? " bemol" : "";
+  return SOLFEGE[t.letter] + suffix;
+}
+
+/** Compact form for the diagram: "sol♭" / "G♭", no mazhor/minor word. */
+export function tonicSymbol(t: Tonic, naming: Naming): string {
+  const base = naming === "letters" ? t.letter.toUpperCase() : SOLFEGE[t.letter];
+  return base + (t.accidental === "#" ? "♯" : t.accidental === "b" ? "♭" : "");
+}
+
+export function keyName(t: Tonic, mode: "major" | "minor", naming: Naming): string {
+  return `${tonicName(t, naming)} ${mode === "major" ? "mazhor" : "minor"}`;
+}
+
+/** The accidentals of a signature always appear in this order. */
+export const SHARP_ORDER: Tonic[] = [
+  { letter: "f", accidental: "#" },
+  { letter: "c", accidental: "#" },
+  { letter: "g", accidental: "#" },
+  { letter: "d", accidental: "#" },
+  { letter: "a", accidental: "#" },
+  { letter: "e", accidental: "#" },
+  { letter: "b", accidental: "#" },
+];
+
+export const FLAT_ORDER: Tonic[] = [
+  { letter: "b", accidental: "b" },
+  { letter: "e", accidental: "b" },
+  { letter: "a", accidental: "b" },
+  { letter: "d", accidental: "b" },
+  { letter: "g", accidental: "b" },
+  { letter: "c", accidental: "b" },
+  { letter: "f", accidental: "b" },
+];
+
+export type SignatureKind = "diezim" | "bemolim" | "none";
+
+export interface KeyRow {
+  id: string;
+  tonic: Tonic;
+  /** How many accidentals in the signature, 0-7. */
+  count: number;
+  kind: SignatureKind;
+  relativeMinor: Tonic;
+}
+
+const t = (letter: Tonic["letter"], accidental: Tonic["accidental"] = ""): Tonic => ({
+  letter,
+  accidental,
+});
+
+/**
+ * Ordered by fifths, flattest first. Index +1 is a fifth up, -1 a fifth down,
+ * which is where the "move a fifth" questions come from.
+ */
+export const KEYS: KeyRow[] = [
+  { id: "cb", tonic: t("c", "b"), count: 7, kind: "bemolim", relativeMinor: t("a", "b") },
+  { id: "gb", tonic: t("g", "b"), count: 6, kind: "bemolim", relativeMinor: t("e", "b") },
+  { id: "db", tonic: t("d", "b"), count: 5, kind: "bemolim", relativeMinor: t("b", "b") },
+  { id: "ab", tonic: t("a", "b"), count: 4, kind: "bemolim", relativeMinor: t("f") },
+  { id: "eb", tonic: t("e", "b"), count: 3, kind: "bemolim", relativeMinor: t("c") },
+  { id: "bb", tonic: t("b", "b"), count: 2, kind: "bemolim", relativeMinor: t("g") },
+  { id: "f", tonic: t("f"), count: 1, kind: "bemolim", relativeMinor: t("d") },
+  { id: "c", tonic: t("c"), count: 0, kind: "none", relativeMinor: t("a") },
+  { id: "g", tonic: t("g"), count: 1, kind: "diezim", relativeMinor: t("e") },
+  { id: "d", tonic: t("d"), count: 2, kind: "diezim", relativeMinor: t("b") },
+  { id: "a", tonic: t("a"), count: 3, kind: "diezim", relativeMinor: t("f", "#") },
+  { id: "e", tonic: t("e"), count: 4, kind: "diezim", relativeMinor: t("c", "#") },
+  { id: "b", tonic: t("b"), count: 5, kind: "diezim", relativeMinor: t("g", "#") },
+  { id: "fs", tonic: t("f", "#"), count: 6, kind: "diezim", relativeMinor: t("d", "#") },
+  { id: "cs", tonic: t("c", "#"), count: 7, kind: "diezim", relativeMinor: t("a", "#") },
+];
+
+/** The accidentals of a key's signature, in order of appearance. */
+export function signature(key: KeyRow): Tonic[] {
+  if (key.kind === "none") return [];
+  const order = key.kind === "diezim" ? SHARP_ORDER : FLAT_ORDER;
+  return order.slice(0, key.count);
+}
+
+export function signatureText(key: KeyRow, naming: Naming): string {
+  const parts = signature(key);
+  if (parts.length === 0) return "ein simanim";
+  return parts.map((p) => tonicName(p, naming)).join(", ");
+}
+
+export function countText(key: KeyRow): string {
+  if (key.kind === "none") return "ein simanim";
+  return `${key.count} ${key.kind}`;
+}
+
+export function keyById(id: string): KeyRow | undefined {
+  return KEYS.find((k) => k.id === id);
+}
+
+/**
+ * The twelve clock positions, C at the top and sharps clockwise. Two positions
+ * carry an enharmonic pair; the reference diagram shows both.
+ */
+export const CIRCLE_POSITIONS: { ids: string[] }[] = [
+  { ids: ["c"] },
+  { ids: ["g"] },
+  { ids: ["d"] },
+  { ids: ["a"] },
+  { ids: ["e"] },
+  { ids: ["b", "cb"] },
+  { ids: ["fs", "gb"] },
+  { ids: ["cs", "db"] },
+  { ids: ["ab"] },
+  { ids: ["eb"] },
+  { ids: ["bb"] },
+  { ids: ["f"] },
+];

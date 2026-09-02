@@ -11,18 +11,34 @@ export function selectionWeight(q: Question, progress: Progress): number {
 }
 
 /**
- * Weighted random pick. Missed questions resurface more often; the previous
- * question is excluded so nothing repeats back to back.
+ * Weighted random pick. Missed questions resurface more often.
+ *
+ * The previous question is excluded, and so is anything sharing its prompt:
+ * several questions ask different things about one key, and seeing that key
+ * three times running reads as a stutter even though the questions differ.
  */
 export function selectQuestion(
   pool: Question[],
   progress: Progress,
-  previousId?: string,
+  previous?: Question,
   rng: () => number = Math.random,
 ): Question | null {
   if (pool.length === 0) return null;
-  const candidates =
-    pool.length > 1 ? pool.filter((q) => q.id !== previousId) : pool;
+  let candidates = pool;
+  if (previous && pool.length > 1) {
+    candidates = pool.filter((q) => q.id !== previous.id);
+    // Where the prompt is the subject - a key, an interval - two questions
+    // about it in a row read as a stutter even though they ask different
+    // things. Where the subject is a drawing, the prompt is a constant
+    // instruction ("Name the note") and says nothing about repetition.
+    if (!previous.media) {
+      const fresh = candidates.filter(
+        (q) => q.media !== undefined || q.prompt !== previous.prompt,
+      );
+      if (fresh.length > 0) candidates = fresh;
+    }
+    if (candidates.length === 0) candidates = pool;
+  }
 
   const weights = candidates.map((q) => selectionWeight(q, progress));
   const total = weights.reduce((a, b) => a + b, 0);
