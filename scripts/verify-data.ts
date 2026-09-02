@@ -12,6 +12,8 @@ import { MODES, getMode, MIXED_MODE_ID } from "../lib/modes/registry";
 import { DEFAULT_SETTINGS } from "../lib/engine/settings";
 import { matches } from "../lib/engine/normalize";
 import { selectQuestion } from "../lib/engine/select";
+import { buildMode } from "../lib/modes/build";
+import { INTERVALS } from "../lib/data/intervals";
 import { applyResult, emptyProgress } from "../lib/engine/progress";
 import { gradeQuestion } from "../lib/engine/grade";
 import type { AppSettings } from "../lib/engine/settings";
@@ -118,6 +120,7 @@ const settingsMatrix: AppSettings[] = [
   { ...DEFAULT_SETTINGS, naming: "letters" },
   { ...DEFAULT_SETTINGS, staffDifficulty: "hard", clefs: "treble" },
   { ...DEFAULT_SETTINGS, answerStyle: "typing", staffDifficulty: "medium" },
+  { ...DEFAULT_SETTINGS, buildStyle: "typed" },
 ];
 
 for (const settings of settingsMatrix) {
@@ -172,6 +175,90 @@ for (const settings of settingsMatrix) {
   );
 }
 
+// --- Mode 4: the interval each built question actually spans -----------------
+// Checked against the letter names, which is the independent half: a terza is
+// three letters whatever its size in tones, and a triton is the one interval
+// that can be spelled either as a fourth or as a fifth.
+const LETTER_SPAN: Record<string, number[]> = {
+  prima: [0],
+  sekunda: [1],
+  terza: [2],
+  kvarta: [3],
+  triton: [3, 4],
+  kvinta: [4],
+  sexta: [5],
+  septima: [6],
+  oktava: [7],
+};
+
+{
+  const pool = buildMode.pool({
+    ...DEFAULT_SETTINGS,
+    buildStyle: "staff",
+  } as unknown as ModeSettings);
+  eq("build mode produces questions", pool.length > 0, true);
+
+  const pitchAt = (s: number): N.Pitch => ({
+    letter: N.SCALE_ORDER[((s % 7) + 7) % 7],
+    octave: Math.floor(s / 7),
+  });
+
+  for (const q of pool) {
+    const part = q.parts[0];
+    if (part.input.kind !== "value" || !part.input.render) {
+      eq(`${q.id}: answered on the staff`, false, true);
+      continue;
+    }
+    const given = String(part.input.render.payload.given);
+    const [letter, octave] = given.split("/");
+    const start: N.Pitch = { letter: letter as N.Letter, octave: Number(octave) };
+    const target = pitchAt(Number(part.accepted[0]));
+
+    const interval = INTERVALS.find((i) => i.name === q.prompt);
+    eq(`${q.id}: names a real interval`, interval !== undefined, true);
+    if (!interval) continue;
+
+    const semitones = N.semitone(target) - N.semitone(start);
+    eq(
+      `${q.id}: spans ${interval.name}`,
+      Math.abs(semitones),
+      interval.tones * 2,
+    );
+    eq(
+      `${q.id}: direction matches the prompt`,
+      semitones > 0,
+      (q.promptSub ?? "").startsWith("above"),
+    );
+
+    const family = interval.name.split(" ")[0];
+    eq(
+      `${q.id}: ${interval.name} spans the right number of letters`,
+      LETTER_SPAN[family].includes(Math.abs(N.step(target) - N.step(start))),
+      true,
+    );
+
+    const positions = part.input.options.map((o) => o.value);
+    eq(
+      `${q.id}: the answer is a position that can be placed`,
+      positions.includes(N.step(target)),
+      true,
+    );
+  }
+
+  // Every interval in the table can actually be built, in both directions.
+  for (const interval of INTERVALS.filter((i) => i.tones > 0)) {
+    for (const direction of ["above", "below"]) {
+      eq(
+        `${interval.name} can be built ${direction}`,
+        pool.some(
+          (q) => q.prompt === interval.name && (q.promptSub ?? "").startsWith(direction),
+        ),
+        true,
+      );
+    }
+  }
+}
+
 // --- Selection ---------------------------------------------------------------
 // A seeded generator, so a failure here is reproducible.
 let seed = 12345;
@@ -190,7 +277,11 @@ for (const id of [...MODES.map((m) => m.id), MIXED_MODE_ID]) {
   let samePrompt = 0;
   const drawn = new Set<string>();
 
-  for (let i = 0; i < 4000; i++) {
+  // Enough draws that a question missing entirely means a real dead spot, not
+  // an unlucky sample - the mixed pool gives each mode an equal share, so its
+  // biggest mode's questions are individually rare.
+  const draws = Math.max(4000, pool.length * 120);
+  for (let i = 0; i < draws; i++) {
     const next = selectQuestion(pool, progress, previous ?? undefined, rng);
     if (!next) { eq(`${id}: selection never runs dry`, false, true); break; }
     if (previous && next.id === previous.id) sameId++;

@@ -13,6 +13,8 @@ export interface AppSettings {
   staffDifficulty: "easy" | "medium" | "hard";
   /** Tap one of seven names, or type the answer. */
   answerStyle: "buttons" | "typing";
+  /** Build an interval by placing it on the staff, or by naming the note. */
+  buildStyle: "staff" | "typed";
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -20,6 +22,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   clefs: "both",
   staffDifficulty: "easy",
   answerStyle: "buttons",
+  buildStyle: "staff",
 };
 
 function pick<K extends keyof AppSettings>(
@@ -39,5 +42,6 @@ export function readSettings(raw: ModeSettings): AppSettings {
     clefs: pick(raw, "clefs", ["treble", "bass", "both"]),
     staffDifficulty: pick(raw, "staffDifficulty", ["easy", "medium", "hard"]),
     answerStyle: pick(raw, "answerStyle", ["buttons", "typing"]),
+    buildStyle: pick(raw, "buildStyle", ["staff", "typed"]),
   };
 }

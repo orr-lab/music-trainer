@@ -38,6 +38,21 @@ export function step(p: Pitch): number {
   return p.octave * 7 + SCALE_ORDER.indexOf(p.letter);
 }
 
+const SEMITONES: Record<Letter, number> = {
+  c: 0,
+  d: 2,
+  e: 4,
+  f: 5,
+  g: 7,
+  a: 9,
+  b: 11,
+};
+
+/** Absolute pitch in semitones, for measuring intervals between two notes. */
+export function semitone(p: Pitch): number {
+  return p.octave * 12 + SEMITONES[p.letter];
+}
+
 export function vexKey(p: Pitch): string {
   return `${p.letter}/${p.octave}`;
 }

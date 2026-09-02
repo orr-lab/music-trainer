@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { AnswerPart } from "@/lib/engine/types";
 import { matches } from "@/lib/engine/normalize";
+import { AnswerMediaView } from "@/components/media";
 
 export type PartState = "idle" | "correct" | "wrong";
 
@@ -85,6 +86,21 @@ export function AnswerInput({
           className={`min-h-14 w-full rounded-xl border bg-surface px-4 text-center text-lead outline-none ${border}`}
         />
       </form>
+    );
+  }
+
+  // Some answers are given by drawing rather than by picking from a list.
+  if (part.input.kind === "value" && part.input.render) {
+    return (
+      <AnswerMediaView
+        render={part.input.render}
+        options={part.input.options}
+        value={value}
+        state={state}
+        locked={locked}
+        accepted={part.accepted}
+        onAnswer={onAnswer}
+      />
     );
   }
 

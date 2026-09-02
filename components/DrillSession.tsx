@@ -88,6 +88,8 @@ export function DrillSession({ modeId }: { modeId: string }) {
       }
       if (!activePart || result) return;
       if (activePart.input.kind === "text") return;
+      // A custom renderer handles its own keys.
+      if (activePart.input.kind === "value" && activePart.input.render) return;
       const digit = Number(e.key);
       if (!Number.isInteger(digit) || digit < 1) return;
       const options =
@@ -151,19 +153,31 @@ export function DrillSession({ modeId }: { modeId: string }) {
       {question ? (
         <div className="flex flex-1 flex-col gap-8 pt-8 pb-16">
           <div className="text-center">
-            {question.media ? (
+            {question.media ? <QuestionMediaView media={question.media} /> : null}
+            {/*
+              A prompt with a sub-line underneath it is the subject of the
+              question - an interval, a key - and carries the screen. A prompt
+              on its own is an instruction ("Name the note") sitting under a
+              drawing that is itself the subject.
+            */}
+            {question.promptSub ? (
               <>
-                <QuestionMediaView media={question.media} />
-                <h1 className="mt-4 text-lead">{question.prompt}</h1>
+                <h1
+                  className={`text-display font-semibold tracking-tight ${
+                    question.media ? "mt-4" : ""
+                  }`}
+                >
+                  {question.prompt}
+                </h1>
+                <p className="mt-4 text-content text-muted">
+                  {question.promptSub}
+                </p>
               </>
             ) : (
-              <h1 className="text-display font-semibold tracking-tight">
+              <h1 className={`text-lead ${question.media ? "mt-4" : ""}`}>
                 {question.prompt}
               </h1>
             )}
-            {question.promptSub ? (
-              <p className="mt-4 text-content text-muted">{question.promptSub}</p>
-            ) : null}
           </div>
 
           <div className="flex flex-col gap-8">

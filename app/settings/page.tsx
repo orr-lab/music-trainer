@@ -93,6 +93,17 @@ export default function SettingsPage() {
       />
 
       <SettingGroup
+        label="Building intervals"
+        hint="Place the second note on the staff, or just name it."
+        value={settings.buildStyle}
+        options={[
+          { id: "staff", label: "Place it on the staff" },
+          { id: "typed", label: "Type the note name" },
+        ]}
+        onPick={(v) => setSetting("buildStyle", v)}
+      />
+
+      <SettingGroup
         label="Answering the staff drill"
         hint="Tapping is faster; typing is harder, and better practice."
         value={settings.answerStyle}

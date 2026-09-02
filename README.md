@@ -4,10 +4,13 @@ Theory drilling for the Israeli 5-unit Bagrut track. Hebrew terms in Latin
 transliteration, dark UI, phone first. No backend, no accounts - everything is
 kept in `localStorage` on the device.
 
-Three drill modes, plus a mixed session that draws from all of them:
+Four drill modes, plus a mixed session that draws from all of them:
 
 - **Mirvachim** - intervals: size in tones and classification, both directions.
 - **Kriat tavim** - staff reading: name the note, treble and bass, VexFlow.
+- **Bniyat mirvachim** - building intervals: given a note on the staff and an
+  interval, place the other note - above or below - either by putting it on the
+  staff or by naming it.
 - **Ma'agal ha-kvintot** - circle of fifths: signatures, relative minors,
   moving by fifths, and the order of the accidentals.
 
@@ -63,16 +66,21 @@ type, its accepted answers, the answer to show in feedback, and its topic tags.
 - `store.ts` - the single `localStorage`-backed store all components read
 
 Three answer input types exist: `choice` (multiple choice), `value` (discrete
-values, used for the tone scale and accidental counts) and `text` (free typing,
-normalized). A fourth mode needs a new file in `lib/modes/` and one line in
-`lib/modes/registry.ts` - no engine changes.
+values - the tone scale, accidental counts, a position on a staff) and `text`
+(free typing, normalized). A `value` input can name a `render` for itself, the
+same way a question can carry `media`: that is how placing a note on the staff
+works without the engine learning what a staff is. A new mode needs a new file
+in `lib/modes/` and one line in `lib/modes/registry.ts`.
 
 Repetition: a missed question's selection weight is multiplied by 3, then halved
 by each correct answer until it is back to normal after two. That lives in
-`nextBoost()` in `progress.ts`. Selection is proportional to the pool, so every
-individual question gets equal attention - which means the mixed session spends
-more time on the circle of fifths simply because there is more of it. Drill a
-single mode when you want to even that out.
+`nextBoost()` in `progress.ts`.
+
+The mixed session gives each mode an equal share rather than a share
+proportional to its size. Without that, the two generated modes - the circle of
+fifths and interval building - would crowd out the others, since between them
+they hold most of the questions. A question's `weight` still decides what it is
+worth; `selectionBias` decides only how often it comes up.
 
 ### Adding drill content
 
@@ -91,8 +99,16 @@ Content is data. To add an interval, add a row to `INTERVALS` in
 }
 ```
 
-Both question directions are generated from that row. Notes and keys work the
-same way, in `lib/data/notes.ts` and `lib/data/keys.ts`. No JSX changes.
+Both question directions are generated from that row, and so are the
+interval-building questions in Mode 4. Notes and keys work the same way, in
+`lib/data/notes.ts` and `lib/data/keys.ts`. No JSX changes.
+
+Mode 4 uses naturals at both ends. That is not a shortcut: between two natural
+notes the interval is fully determined, so an interval name plus a starting note
+picks out exactly one answer with no accidental to spell. All twelve non-unison
+intervals still turn up - the triton as fa-si, the sekunda ktana as mi-fa and
+si-do - and `verify:data` asserts that each one can be built in both
+directions.
 
 `kvarta zaka` carries two entries in `classes`: it is a konsonans zaka on its
 own but counts as a disonans against the bass, so both answers are accepted and
@@ -107,6 +123,8 @@ would quietly corrupt a drill:
 - every key's signature length matches its accidental count, and each step
   around the circle really is a fifth
 - ledger-line counts and staff positions ("2nd space of the bass staff")
+- every built interval spans the right number of semitones *and* the right
+  number of letter names, checked independently of how it was generated
 - across four settings combinations, every generated question has a unique id,
   a reason, and exactly the intended correct options on offer
 - no note name is accidentally accepted for a different note

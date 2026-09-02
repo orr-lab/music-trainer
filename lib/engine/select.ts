@@ -7,7 +7,7 @@ const UNSEEN_BOOST = 1.6;
 export function selectionWeight(q: Question, progress: Progress): number {
   const stat = progress.questions[q.id];
   const boost = stat ? stat.boost : UNSEEN_BOOST;
-  return Math.max(0.01, q.weight * boost);
+  return Math.max(0.0001, q.weight * (q.selectionBias ?? 1) * boost);
 }
 
 /**

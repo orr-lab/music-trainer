@@ -8,13 +8,53 @@ const HEIGHT = 210;
 const STAVE_Y = 78;
 
 /**
- * One note on a staff, drawn by VexFlow.
- *
- * VexFlow is imported dynamically: it is a large library and nothing outside
- * this mode needs it, so it stays out of the initial bundle.
+ * VexFlow needs literal colours, so these mirror the tokens in globals.css.
+ * Change one and change the other.
  */
-export function StaffMedia({ clef, note }: { clef: string; note: string }) {
+export const STAFF_COLORS = {
+  ink: "#f0f0f4",
+  accent: "#7c5cff",
+  success: "#35d07f",
+  error: "#ff5a5a",
+};
+
+export interface StaffNote {
+  /** VexFlow key, e.g. "c/4". */
+  key: string;
+  color: string;
+}
+
+export interface StaffGeometry {
+  /** y of the top staff line, in viewBox units. */
+  topLineY: number;
+  /** Distance between staff lines; half of it is one step. */
+  spacing: number;
+  height: number;
+}
+
+/**
+ * A staff with one or more notes, drawn by VexFlow.
+ *
+ * VexFlow is imported dynamically: it is a large library and only the staff
+ * modes need it, so it stays out of the initial bundle.
+ */
+export function StaffMedia({
+  clef,
+  notes,
+  onGeometry,
+}: {
+  clef: string;
+  notes: StaffNote[];
+  onGeometry?: (geometry: StaffGeometry) => void;
+}) {
   const host = useRef<HTMLDivElement>(null);
+  const report = useRef(onGeometry);
+  useEffect(() => {
+    report.current = onGeometry;
+  }, [onGeometry]);
+
+  // A string key, so re-rendering only happens when the drawing changes.
+  const signature = notes.map((n) => `${n.key}:${n.color}`).join("|");
 
   useEffect(() => {
     const el = host.current;
@@ -27,31 +67,56 @@ export function StaffMedia({ clef, note }: { clef: string; note: string }) {
       );
       if (cancelled || !host.current) return;
 
+      const drawn = signature
+        ? signature.split("|").map((entry) => {
+            const [key, color] = entry.split(":");
+            return { key, color };
+          })
+        : [];
+
       host.current.innerHTML = "";
       const renderer = new Renderer(host.current, Renderer.Backends.SVG);
       renderer.resize(WIDTH, HEIGHT);
       const ctx = renderer.getContext();
 
       // The page is near-black; everything VexFlow draws has to be inverted.
-      const ink = "#f0f0f4";
-      const style = { fillStyle: ink, strokeStyle: ink };
+      const ink = STAFF_COLORS.ink;
       ctx.setFillStyle(ink);
       ctx.setStrokeStyle(ink);
 
       const stave = new Stave(4, STAVE_Y, WIDTH - 8);
       stave.addClef(clef);
-      stave.setStyle(style);
+      stave.setStyle({ fillStyle: ink, strokeStyle: ink });
       stave.setContext(ctx).draw();
 
-      const staveNote = new StaveNote({ keys: [note], duration: "w", clef });
-      staveNote.setStyle(style);
-      const voice = new Voice({ numBeats: 4, beatValue: 4 });
-      voice.addTickables([staveNote]);
-      const noteArea = stave.getNoteEndX() - stave.getNoteStartX();
-      new Formatter().joinVoices([voice]).format([voice], noteArea);
-      // One note left-justifies in its area; nudge it to the middle instead.
-      staveNote.setXShift(noteArea / 2 - 30);
-      voice.draw(ctx, stave);
+      report.current?.({
+        topLineY: stave.getYForLine(0),
+        spacing: stave.getSpacingBetweenLines(),
+        height: HEIGHT,
+      });
+
+      if (drawn.length > 0) {
+        // Whole, half or quarter notes, so the bar is always full.
+        const duration =
+          drawn.length === 1 ? "w" : drawn.length === 2 ? "h" : "q";
+        const beats = drawn.length <= 2 ? 4 : drawn.length;
+
+        const staveNotes = drawn.map((n) => {
+          const note = new StaveNote({ keys: [n.key], duration, clef });
+          note.setStyle({ fillStyle: n.color, strokeStyle: n.color });
+          return note;
+        });
+
+        const voice = new Voice({ numBeats: beats, beatValue: 4 });
+        voice.addTickables(staveNotes);
+        const noteArea = stave.getNoteEndX() - stave.getNoteStartX();
+        new Formatter().joinVoices([voice]).format([voice], noteArea);
+        if (staveNotes.length === 1) {
+          // One note left-justifies in its area; nudge it to the middle.
+          staveNotes[0].setXShift(noteArea / 2 - 30);
+        }
+        voice.draw(ctx, stave);
+      }
 
       // Scale to the column width instead of overflowing on a narrow phone.
       const svg = host.current.querySelector("svg");
@@ -66,13 +131,13 @@ export function StaffMedia({ clef, note }: { clef: string; note: string }) {
     return () => {
       cancelled = true;
     };
-  }, [clef, note]);
+  }, [clef, signature]);
 
   return (
     <div
       ref={host}
       role="img"
-      aria-label={`A note on the ${clef} staff`}
+      aria-label={`A ${clef} staff`}
       // Fixed box: the staff must not resize as it loads, or the answers move.
       className="mx-auto h-[210px] w-full max-w-[300px]"
     />
