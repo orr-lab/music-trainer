@@ -93,7 +93,7 @@ export function PianoKeyboard({
   return (
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      className="mx-auto w-full max-w-[420px]"
+      className="notation mx-auto w-full max-w-[420px]"
       role={interactive ? "group" : "img"}
       aria-label="Piano keyboard"
     >

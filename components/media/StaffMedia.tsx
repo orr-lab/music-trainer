@@ -33,6 +33,33 @@ export interface StaffNote {
   color: string;
 }
 
+/**
+ * VexFlow draws clefs, noteheads and accidentals as text in Bravura, and it
+ * starts loading that font asynchronously when the module is imported. Drawing
+ * before it arrives silently falls back to the UI font, which renders the clef
+ * as a mangled glyph and noteheads as the letter o - so wait for it, once, and
+ * share the wait between every staff on the page.
+ */
+let musicFontReady: Promise<void> | null = null;
+
+function whenMusicFontReady(): Promise<void> {
+  musicFontReady ??= (async () => {
+    if (typeof document === "undefined" || !document.fonts) return;
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      if (document.fonts.check("30pt Bravura")) return;
+      try {
+        await document.fonts.load("30pt Bravura");
+      } catch {
+        /* not registered yet; the loop tries again */
+      }
+      if (document.fonts.check("30pt Bravura")) return;
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+  })();
+  return musicFontReady;
+}
+
 export interface StaffGeometry {
   /** y of the top staff line, in viewBox units. */
   topLineY: number;
@@ -82,6 +109,7 @@ export function StaffMedia({
     (async () => {
       const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } =
         await import("vexflow");
+      await whenMusicFontReady();
       if (cancelled || !host.current) return;
 
       const drawn = signature
@@ -161,7 +189,7 @@ export function StaffMedia({
       role="img"
       aria-label={`A ${clef} staff`}
       // Fixed box: the staff must not resize as it loads, or the answers move.
-      className="mx-auto w-full max-w-[300px]"
+      className="notation mx-auto w-full max-w-[300px]"
       style={{ height }}
     />
   );

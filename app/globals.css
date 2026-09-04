@@ -77,6 +77,20 @@ button {
   }
 }
 
+/*
+ * Notation reads left to right in every language. SVG text in an RTL document
+ * anchors from the right, which shifts every glyph one glyph-width left -
+ * clefs off the staff, noteheads off their line.
+ *
+ * Only where the text is notation, never where it is words: a flat sign after
+ * a Hebrew note name belongs to its left, and the document direction is what
+ * puts it there.
+ */
+.notation,
+.notation svg {
+  direction: ltr;
+}
+
 /* Keyboard focus is visible everywhere; pointer focus stays quiet. */
 :focus-visible {
   outline: 2px solid var(--color-accent);
