@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnswerInput, type PartState } from "@/components/AnswerInput";
 import { QuestionMediaView } from "@/components/media";
 import { SessionComplete } from "@/components/SessionComplete";
+import { useLang } from "@/components/useLang";
 import { useProgress } from "@/components/useProgress";
 import { gradeQuestion, xpFor } from "@/lib/engine/grade";
 import { present } from "@/lib/engine/present";
@@ -18,6 +19,7 @@ const ADVANCE_DELAY_MS = 600;
 export function DrillSession({ modeId }: { modeId: string }) {
   const mode = getMode(modeId);
   const { progress, ready, record } = useProgress();
+  const { t } = useLang();
 
   // The selector needs the freshest stats without re-running effects on
   // every answer.
@@ -143,9 +145,9 @@ export function DrillSession({ modeId }: { modeId: string }) {
   if (!mode) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center gap-4 p-4">
-        <p className="text-lead text-muted">No such mode.</p>
+        <p className="text-lead text-muted">{t.noSuchMode}</p>
         <Link href="/" className="text-content text-accent">
-          Back
+          {t.back}
         </Link>
       </main>
     );
@@ -172,10 +174,10 @@ export function DrillSession({ modeId }: { modeId: string }) {
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col p-4">
       <header className="flex items-center justify-between text-content text-muted">
         <Link href="/" className="min-h-12 py-3 pr-4 transition-colors hover:text-ink">
-          &larr; Back
+          &larr; {t.back}
         </Link>
         <span>
-          Streak <span className="text-ink">{progress.currentStreak}</span>
+          {t.streak} <span className="text-ink">{progress.currentStreak}</span>
         </span>
       </header>
 
@@ -269,7 +271,7 @@ export function DrillSession({ modeId }: { modeId: string }) {
             {result ? (
               result.correct ? (
                 <p className="text-lead text-success">
-                  Correct &middot; +{xpFor(result)} XP
+                  {t.correctPlus(xpFor(result))}
                 </p>
               ) : (
                 <div className="flex flex-col gap-4">
@@ -288,7 +290,7 @@ export function DrillSession({ modeId }: { modeId: string }) {
                     onClick={advance}
                     className="min-h-14 w-full rounded-xl border border-accent bg-surface text-lead text-ink transition-colors hover:bg-line/40"
                   >
-                    {session.asked >= length ? "See how you did" : "Next"}
+                    {session.asked >= length ? t.seeResults : t.next}
                   </button>
                 </div>
               )
@@ -297,7 +299,7 @@ export function DrillSession({ modeId }: { modeId: string }) {
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-content text-muted">Loading&hellip;</p>
+          <p className="text-content text-muted">{t.loading}</p>
         </div>
       )}
     </main>

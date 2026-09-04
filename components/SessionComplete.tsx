@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLang } from "@/components/useLang";
 import { useProgress } from "@/components/useProgress";
 import { accuracy, liveDailyStreak } from "@/lib/engine/progress";
 
@@ -41,17 +42,11 @@ export function SessionComplete({
   onAgain: () => void;
 }) {
   const { progress } = useProgress();
+  const { t } = useLang();
   const percent = Math.round(accuracy(asked, correct) * 100);
   const weak = weakest(misses);
 
-  const verdict =
-    percent === 100
-      ? "Clean sweep."
-      : percent >= 80
-        ? "Good round."
-        : percent >= 50
-          ? "Worth another go."
-          : "That one was rough - which is the point of drilling it.";
+  const verdict = t.sessionVerdict(percent);
 
   return (
     <div className="animate-rise flex flex-1 flex-col justify-center gap-12 py-12">
@@ -63,16 +58,16 @@ export function SessionComplete({
       </div>
 
       <section className="grid grid-cols-3 gap-4 rounded-xl border border-line bg-surface p-4">
-        <Figure value={`${percent}%`} label="This round" />
-        <Figure value={`+${xp}`} label="XP" />
-        <Figure value={String(liveDailyStreak(progress))} label="Day streak" />
+        <Figure value={`${percent}%`} label={t.thisRound} />
+        <Figure value={`+${xp}`} label={t.xp} />
+        <Figure
+          value={String(liveDailyStreak(progress))}
+          label={t.dayStreak}
+        />
       </section>
 
       {weak ? (
-        <p className="text-center text-content text-muted">
-          Most trouble with <span className="text-ink">{weak}</span>. Those
-          questions will come round more often.
-        </p>
+        <p className="text-center text-content text-muted">{t.mostTrouble(weak)}</p>
       ) : null}
 
       <div className="flex flex-col gap-4">
@@ -81,13 +76,13 @@ export function SessionComplete({
           onClick={onAgain}
           className="min-h-14 rounded-xl border border-accent bg-surface text-lead text-ink transition-colors hover:bg-line/40"
         >
-          Another round
+          {t.anotherRound}
         </button>
         <Link
           href="/"
           className="flex min-h-14 items-center justify-center rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted"
         >
-          Done for now
+          {t.doneForNow}
         </Link>
       </div>
     </div>

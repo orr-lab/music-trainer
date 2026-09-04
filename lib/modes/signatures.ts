@@ -1,5 +1,7 @@
 import type { ChoiceOption, Mode, Question } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
+import type { Lang } from "@/lib/i18n/lang";
+import { copy } from "@/lib/i18n/ui";
 import {
   KEYS,
   countText,
@@ -27,14 +29,15 @@ function neighbours(index: number, howMany: number): KeyRow[] {
 function options(
   index: number,
   naming: Naming,
+  lang: Lang,
   mode: "major" | "minor",
 ): ChoiceOption[] {
   return [KEYS[index], ...neighbours(index, 3)].map((k) => ({
     id: k.id,
     label:
       mode === "major"
-        ? keyName(k.tonic, "major", naming)
-        : keyName(k.relativeMinor, "minor", naming),
+        ? keyName(k.tonic, "major", naming, lang)
+        : keyName(k.relativeMinor, "minor", naming, lang),
   }));
 }
 
@@ -45,24 +48,25 @@ export const signaturesMode: Mode = {
   subtitle: "Simanei mafteach",
   blurb: "See the signature on the staff and name the key.",
   pool: (raw) => {
-    const { naming } = readSettings(raw);
+    const { naming, lang } = readSettings(raw);
+    const t = copy(lang).q;
     const clefs: Clef[] = ["treble", "bass"];
     const questions: Question[] = [];
 
     KEYS.forEach((key, index) => {
       for (const clef of clefs) {
-        const major = keyName(key.tonic, "major", naming);
-        const minor = keyName(key.relativeMinor, "minor", naming);
+        const major = keyName(key.tonic, "major", naming, lang);
+        const minor = keyName(key.relativeMinor, "minor", naming, lang);
         const written =
           key.kind === "none"
             ? "No accidentals at all"
-            : `${countText(key)}: ${signatureText(key, naming)}`;
+            : `${countText(key, lang)}: ${signatureText(key, naming, lang)}`;
 
         for (const mode of ["major", "minor"] as const) {
           questions.push({
             id: `signatures:${mode}:${clef}:${key.id}`,
             modeId: SIGNATURES_MODE_ID,
-            prompt: mode === "major" ? "Which major key?" : "Which minor key?",
+            prompt: mode === "major" ? t.whichMajorKey : t.whichMinorKey,
             media: {
               kind: "staff",
               payload: { clef, keySignature: vexKeySpec(key) },
@@ -72,8 +76,8 @@ export const signaturesMode: Mode = {
             parts: [
               {
                 id: "key",
-                label: "Key",
-                input: { kind: "choice", options: options(index, naming, mode) },
+                label: t.keyLabel,
+                input: { kind: "choice", options: options(index, naming, lang, mode) },
                 accepted: [key.id],
                 display: mode === "major" ? major : minor,
                 reason: `${written}. That signature is ${major}, or ${minor}.`,

@@ -1,3 +1,4 @@
+import type { Lang } from "@/lib/i18n/lang";
 import type { ModeSettings } from "./types";
 
 /**
@@ -5,6 +6,8 @@ import type { ModeSettings } from "./types";
  * to know what any of them mean; modes read them through `readSettings`.
  */
 export interface AppSettings {
+  /** Which language the terms and the interface are in. */
+  lang: Lang;
   /** Note and key names: "sol" / "sol mazhor", or "G" / "G major". */
   naming: "solfege" | "letters";
   /** Which clefs Mode 2 draws from. */
@@ -22,6 +25,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  lang: "translit",
   naming: "solfege",
   clefs: "both",
   staffDifficulty: "medium",
@@ -44,6 +48,7 @@ function pick<K extends keyof AppSettings>(
 
 export function readSettings(raw: ModeSettings): AppSettings {
   return {
+    lang: pick(raw, "lang", ["translit", "he", "en"]),
     naming: pick(raw, "naming", ["solfege", "letters"]),
     clefs: pick(raw, "clefs", ["treble", "bass", "both"]),
     staffDifficulty: pick(raw, "staffDifficulty", ["easy", "medium", "hard"]),

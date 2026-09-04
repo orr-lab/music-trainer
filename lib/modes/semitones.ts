@@ -1,6 +1,13 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
-import { intervalsFor, toneLabel, toneValues } from "@/lib/data/intervals";
+import { copy } from "@/lib/i18n/ui";
+import {
+  familyName,
+  intervalName,
+  intervalsFor,
+  toneLabel,
+  toneValues,
+} from "@/lib/data/intervals";
 import {
   HIGHEST,
   LOWEST,
@@ -21,6 +28,8 @@ export const semitonesMode: Mode = {
   pool: (raw) => {
     const settings = readSettings(raw);
     const naming = settings.naming;
+    const lang = settings.lang;
+    const t = copy(lang).q;
     // Every interval except the unison, which has nothing to count.
     const COUNTABLE = intervalsFor(settings.intervalSet).filter(
       (i) => i.tones > 0,
@@ -33,7 +42,7 @@ export const semitonesMode: Mode = {
 
     const positions: ValueOption[] = allKeys().map((semitone) => ({
       value: semitone,
-      label: keyName(semitone, naming),
+      label: keyName(semitone, naming, lang),
     }));
 
     const lowStarts = allKeys().filter((s) => s < LOWEST + 12);
@@ -54,21 +63,21 @@ export const semitonesMode: Mode = {
           questions.push({
             id: `semitones:pick:${start}:${up ? "up" : "down"}:${interval.id}`,
             modeId: SEMITONES_MODE_ID,
-            prompt: interval.name,
-            promptSub: `${up ? "above" : "below"} the marked key`,
+            prompt: intervalName(interval, lang),
+            promptSub: up ? t.markedKeyAbove : t.markedKeyBelow,
             weight: interval.weight + (isBlack(start) ? 0.2 : 0),
             topics: ["counting semitones"],
             parts: [
               {
                 id: "key",
-                label: "Key",
+                label: t.keyKeyboardLabel,
                 input: {
                   kind: "value",
                   options: positions,
                   render: { kind: "piano-picker", payload: { start, naming } },
                 },
                 accepted: [String(target)],
-                display: keyName(target, naming),
+                display: keyName(target, naming, lang),
                 reason: `A ${interval.name} is ${toneLabel(
                   interval.tones,
                 )} tones, so ${semitones} semitones. Count them: ${countingRun(
@@ -76,7 +85,7 @@ export const semitonesMode: Mode = {
                   target,
                   naming,
                 )}.`,
-                topics: ["counting semitones", interval.family],
+                topics: ["counting semitones", familyName(interval.family, lang)],
               },
             ],
           });
@@ -94,15 +103,12 @@ export const semitonesMode: Mode = {
         const interval = named[0];
         const target = start + tones * 2;
         if (target > HIGHEST) continue;
-        const allNames =
-          named.length === 1
-            ? `a ${interval.name}`
-            : named.map((i) => i.name).join(", or ");
+        const allNames = named.map((i) => intervalName(i, lang)).join(t.orJoin);
 
         questions.push({
           id: `semitones:measure:${start}:${tones}`,
           modeId: SEMITONES_MODE_ID,
-          prompt: "How far apart are these?",
+          prompt: t.howFarApart,
           media: {
             kind: "piano",
             payload: { from: start, to: target },
@@ -112,7 +118,7 @@ export const semitonesMode: Mode = {
           parts: [
             {
               id: "tones",
-              label: "Tones",
+              label: t.tones,
               input: { kind: "value", options: TONE_OPTIONS },
               accepted: [String(tones)],
               display: `${toneLabel(tones)} tones - ${allNames}`,

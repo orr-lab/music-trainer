@@ -2,6 +2,7 @@
 
 import { CircleOfFifths } from "@/components/CircleOfFifths";
 import type { Naming } from "@/lib/data/keys";
+import type { Lang } from "@/lib/i18n/lang";
 
 /**
  * Answer by pointing at the circle.
@@ -12,6 +13,7 @@ import type { Naming } from "@/lib/data/keys";
  */
 export function CirclePicker({
   naming,
+  lang,
   value,
   state,
   locked,
@@ -19,6 +21,7 @@ export function CirclePicker({
   onAnswer,
 }: {
   naming: Naming;
+  lang: Lang;
   value: string | undefined;
   state: "idle" | "correct" | "wrong";
   locked: boolean;
@@ -31,6 +34,7 @@ export function CirclePicker({
   return (
     <CircleOfFifths
       naming={naming}
+      lang={lang}
       selected={state === "idle" ? chosen : null}
       showDetail={false}
       // Named only once it has been answered, so the feedback still teaches.

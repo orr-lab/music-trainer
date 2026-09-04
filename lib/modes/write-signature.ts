@@ -1,5 +1,7 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
+import { CLEF_NAMES } from "@/lib/i18n/music";
+import { copy } from "@/lib/i18n/ui";
 import {
   KEYS,
   FLAT_ORDER,
@@ -41,27 +43,28 @@ export const writeSignatureMode: Mode = {
   subtitle: "Ktivat simanei mafteach",
   blurb: "Place every accidental, in order, on the right line.",
   pool: (raw) => {
-    const { naming } = readSettings(raw);
+    const { naming, lang } = readSettings(raw);
+    const t = copy(lang).q;
     const questions: Question[] = [];
 
     for (const key of KEYS) {
       if (key.kind === "none") continue;
       const order = key.kind === "diezim" ? SHARP_ORDER : FLAT_ORDER;
-      const orderText = order.map((a) => tonicName(a, naming)).join(" ");
+      const orderText = order.map((a) => tonicName(a, naming, lang)).join(" ");
 
       for (const clef of ["treble", "bass"] as const) {
         const wanted = signatureSteps(key, clef);
         questions.push({
           id: `write-signature:${clef}:${key.id}`,
           modeId: WRITE_SIGNATURE_MODE_ID,
-          prompt: keyName(key.tonic, "major", naming),
-          promptSub: `write the signature on the ${clef} staff`,
+          prompt: keyName(key.tonic, "major", naming, lang),
+          promptSub: t.writeSignatureOn(CLEF_NAMES[clef][lang]),
           weight: 1 + 0.15 * key.count,
           topics: ["writing key signatures"],
           parts: [
             {
               id: "signature",
-              label: "Signature",
+              label: t.signatureLabel,
               input: {
                 kind: "value",
                 options: placeable(clef),
@@ -76,13 +79,10 @@ export const writeSignatureMode: Mode = {
                 },
               },
               accepted: [wanted.join(",")],
-              display: signatureText(key, naming),
-              reason: `${keyName(key.tonic, "major", naming)} has ${countText(
+              display: signatureText(key, naming, lang),
+              reason: `${keyName(key.tonic, "major", naming, lang)} has ${countText(
                 key,
-              )}: ${signatureText(
-                key,
-                naming,
-              )}. ${key.kind === "diezim" ? "Diezim" : "Bemolim"} always go in this order: ${orderText}.`,
+              )}: ${signatureText(key, naming, lang)}. ${key.kind === "diezim" ? "Diezim" : "Bemolim"} always go in this order: ${orderText}.`,
               topics: ["writing key signatures"],
             },
           ],

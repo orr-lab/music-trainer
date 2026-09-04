@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { Heatmap } from "@/components/Heatmap";
+import { useLang } from "@/components/useLang";
 import { useProgress } from "@/components/useProgress";
 import {
   accuracy,
@@ -10,10 +11,13 @@ import {
   weakestTopics,
 } from "@/lib/engine/progress";
 import { exportProgress } from "@/lib/engine/storage";
+import { modeName } from "@/lib/i18n/music";
 import { MODES } from "@/lib/modes/registry";
 
 export default function StatsPage() {
   const { progress, ready, replace, reset } = useProgress();
+  const { lang, t } = useLang();
+  const tc = t;
   const fileRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -35,9 +39,9 @@ export default function StatsPage() {
   async function upload(file: File) {
     try {
       replace(await file.text());
-      setNote("Progress imported.");
+      setNote(t.imported);
     } catch {
-      setNote("That file could not be read as progress JSON.");
+      setNote(t.importFailed);
     }
   }
 
@@ -50,36 +54,36 @@ export default function StatsPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-12 p-4 py-12">
       <header className="flex items-center justify-between">
-        <h1 className="text-lead font-semibold">Stats</h1>
+        <h1 className="text-lead font-semibold">{t.stats}</h1>
         <Link href="/" className="min-h-12 py-3 pl-4 text-content text-muted">
-          Back
+          {t.back}
         </Link>
       </header>
 
       <section className="grid grid-cols-3 gap-4 rounded-xl border border-line bg-surface p-4">
         <div>
           <p className="text-lead">{ready ? progress.xp : "—"}</p>
-          <p className="text-content text-muted">XP</p>
+          <p className="text-content text-muted">{t.xp}</p>
         </div>
         <div>
           <p className="text-lead">{ready ? liveDailyStreak(progress) : "—"}</p>
-          <p className="text-content text-muted">Day streak</p>
+          <p className="text-content text-muted">{t.dayStreak}</p>
         </div>
         <div>
           <p className="text-lead">
             {ready ? `${Math.round(accuracy(totals.seen, totals.correct) * 100)}%` : "—"}
           </p>
-          <p className="text-content text-muted">Accuracy</p>
+          <p className="text-content text-muted">{t.accuracy}</p>
         </div>
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-content text-muted">Last 12 weeks</h2>
+        <h2 className="text-content text-muted">{t.lastWeeks}</h2>
         <Heatmap days={progress.days} />
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-content text-muted">Modes</h2>
+        <h2 className="text-content text-muted">{t.modes}</h2>
         {MODES.map((mode) => {
           const s = progress.modes[mode.id];
           return (
@@ -87,11 +91,11 @@ export default function StatsPage() {
               key={mode.id}
               className="flex min-h-14 items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3"
             >
-              <span className="text-content text-ink">{mode.subtitle}</span>
+              <span className="text-content text-ink">{modeName(mode.id, lang)}</span>
               <span className="shrink-0 text-content text-muted">
                 {s
-                  ? `${Math.round(accuracy(s.seen, s.correct) * 100)}% of ${s.seen}`
-                  : "not started"}
+                  ? t.ofSeen(Math.round(accuracy(s.seen, s.correct) * 100), s.seen)
+                  : t.notStarted}
               </span>
             </div>
           );
@@ -99,20 +103,20 @@ export default function StatsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-content text-muted">Weakest topics</h2>
+        <h2 className="text-content text-muted">{t.weakestTopics}</h2>
         {weak.length === 0 ? (
           <p className="text-content text-muted">
-            Answer a few more questions and the weak spots show up here.
+            {t.weakestEmpty}
           </p>
         ) : (
-          weak.slice(0, 5).map((t) => (
+          weak.slice(0, 5).map((topic) => (
             <div
-              key={t.topic}
+              key={topic.topic}
               className="flex min-h-14 items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3"
             >
-              <span className="text-content text-ink">{t.topic}</span>
+              <span className="text-content text-ink">{topic.topic}</span>
               <span className="text-content text-muted">
-                {Math.round(t.accuracy * 100)}% of {t.seen}
+                {tc.ofSeen(Math.round(topic.accuracy * 100), topic.seen)}
               </span>
             </div>
           ))
@@ -120,20 +124,20 @@ export default function StatsPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-content text-muted">Progress data</h2>
+        <h2 className="text-content text-muted">{t.progressData}</h2>
         <button
           type="button"
           onClick={download}
           className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
         >
-          Export JSON
+          {t.exportJson}
         </button>
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
           className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
         >
-          Import JSON
+          {t.importJson}
         </button>
         <input
           ref={fileRef}
@@ -153,7 +157,7 @@ export default function StatsPage() {
             if (confirming) {
               reset();
               setConfirming(false);
-              setNote("Progress erased.");
+              setNote(t.erased);
             } else {
               setConfirming(true);
               setNote(null);
@@ -164,7 +168,7 @@ export default function StatsPage() {
             confirming ? "border-error" : "border-line active:border-error"
           }`}
         >
-          {confirming ? "Tap again to erase everything" : "Reset everything"}
+          {confirming ? t.resetConfirm : t.resetEverything}
         </button>
         {note ? <p className="text-content text-muted">{note}</p> : null}
       </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLang } from "@/components/useLang";
 import { useProgress } from "@/components/useProgress";
 import {
   accuracy,
@@ -8,6 +9,7 @@ import {
   liveDailyStreak,
 } from "@/lib/engine/progress";
 import { readSettings } from "@/lib/engine/settings";
+import { modeName } from "@/lib/i18n/music";
 import { MIXED_MODE_ID, groupedModes } from "@/lib/modes/registry";
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -21,6 +23,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export default function Home() {
   const { progress, ready } = useProgress();
+  const { lang, t } = useLang();
   const goal = readSettings(progress.settings).sessionLength;
   const today = answeredToday(progress);
   const streak = liveDailyStreak(progress);
@@ -30,8 +33,8 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-12 p-4 py-12">
       <header className="flex items-baseline justify-between">
-        <h1 className="text-lead font-semibold">Music Trainer</h1>
-        <span className="text-content text-muted">Bagrut 5 yechidot</span>
+        <h1 className="text-lead font-semibold">{t.appName}</h1>
+        <span className="text-content text-muted">{t.tagline}</span>
       </header>
 
       {/*
@@ -43,7 +46,7 @@ export default function Home() {
           href={`/drill/${MIXED_MODE_ID}`}
           className="flex min-h-16 items-center justify-center rounded-xl bg-accent px-4 text-lead font-semibold text-ground transition-opacity hover:opacity-90"
         >
-          {done ? "Another round" : "Practise"}
+          {done ? t.anotherRound : t.practise}
         </Link>
 
         <div className="flex items-center gap-4">
@@ -66,16 +69,16 @@ export default function Home() {
             {!ready
               ? "—"
               : done
-                ? `Done today · ${streak}-day streak`
-                : `${today} of ${goal} today`}
+                ? t.doneToday(streak)
+                : t.todayProgress(today, goal)}
           </span>
         </div>
       </section>
 
       <section className="grid grid-cols-3 gap-4 rounded-xl border border-line bg-surface p-4">
-        <Stat label="XP" value={show(progress.xp)} />
-        <Stat label="Day streak" value={show(streak)} />
-        <Stat label="Best run" value={show(progress.bestStreak)} />
+        <Stat label={t.xp} value={show(progress.xp)} />
+        <Stat label={t.dayStreak} value={show(streak)} />
+        <Stat label={t.bestRun} value={show(progress.bestStreak)} />
       </section>
 
       {/*
@@ -84,7 +87,7 @@ export default function Home() {
       */}
       {groupedModes().map(({ group, modes }) => (
         <section key={group} className="flex flex-col gap-2">
-          <h2 className="mb-2 text-content text-muted">{group}</h2>
+          <h2 className="mb-2 text-content text-muted">{t.groups[group] ?? group}</h2>
           {modes.map((mode) => {
             const stat = progress.modes[mode.id];
             return (
@@ -93,11 +96,11 @@ export default function Home() {
                 href={`/drill/${mode.id}`}
                 className="flex min-h-14 items-center justify-between gap-4 rounded-xl border border-line bg-surface px-4 py-3 transition-colors hover:border-muted active:border-accent"
               >
-                <span className="text-content text-ink">{mode.subtitle}</span>
+                <span className="text-content text-ink">{modeName(mode.id, lang)}</span>
                 <span className="shrink-0 text-content text-muted">
                   {ready && stat
                     ? `${Math.round(accuracy(stat.seen, stat.correct) * 100)}%`
-                    : "new"}
+                    : t.notStarted}
                 </span>
               </Link>
             );
@@ -107,9 +110,9 @@ export default function Home() {
 
       <nav className="grid grid-cols-3 gap-4">
         {[
-          { href: "/circle", label: "Circle", hint: "Reference" },
-          { href: "/stats", label: "Stats", hint: "Progress" },
-          { href: "/settings", label: "Settings", hint: "Difficulty" },
+          { href: "/circle", label: t.circle, hint: t.circleHint },
+          { href: "/stats", label: t.stats, hint: t.statsHint },
+          { href: "/settings", label: t.settings, hint: t.settingsHint },
         ].map((item) => (
           <Link
             key={item.href}

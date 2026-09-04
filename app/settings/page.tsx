@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLang } from "@/components/useLang";
 import { useProgress } from "@/components/useProgress";
 import { readSettings } from "@/lib/engine/settings";
 
@@ -56,93 +57,106 @@ function SettingGroup({
 
 export default function SettingsPage() {
   const { progress, setSetting } = useProgress();
+  const { t } = useLang();
   const settings = readSettings(progress.settings);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col gap-12 p-4 py-12">
       <header className="flex items-center justify-between">
-        <h1 className="text-lead font-semibold">Settings</h1>
+        <h1 className="text-lead font-semibold">{t.settings}</h1>
         <Link href="/" className="min-h-12 py-3 pl-4 text-content text-muted">
-          Back
+          {t.back}
         </Link>
       </header>
 
       <SettingGroup
-        label="Session length"
-        hint="How many questions before a session ends. Shorter is easier to actually start."
+        label={t.s.language}
+        hint={t.s.languageHint}
+        value={settings.lang}
+        options={[
+          { id: "translit", label: "Ivrit, otiyot lo'aziyot" },
+          { id: "he", label: "עברית" },
+          { id: "en", label: "English" },
+        ]}
+        onPick={(v) => setSetting("lang", v)}
+      />
+
+      <SettingGroup
+        label={t.s.sessionLength}
+        hint={t.s.sessionLengthHint}
         value={String(settings.sessionLength)}
         options={[
-          { id: "8", label: "8 questions" },
-          { id: "12", label: "12 questions" },
-          { id: "20", label: "20 questions" },
+          { id: "8", label: t.s.questionCount(8) },
+          { id: "12", label: t.s.questionCount(12) },
+          { id: "20", label: t.s.questionCount(20) },
         ]}
         onPick={(v) => setSetting("sessionLength", Number(v))}
       />
 
       <SettingGroup
-        label="Note and key names"
-        hint="Used for the staff drill and the circle of fifths. Typed answers accept either system whatever this is set to."
+        label={t.s.naming}
+        hint={t.s.namingHint}
         value={settings.naming}
         options={[
-          { id: "solfege", label: "do re mi fa sol la si" },
-          { id: "letters", label: "A B C D E F G" },
+          { id: "solfege", label: t.s.namingSolfege },
+          { id: "letters", label: t.s.namingLetters },
         ]}
         onPick={(v) => setSetting("naming", v)}
       />
 
       <SettingGroup
-        label="Which intervals"
-        hint="Mugdal and muktan intervals are where the name stops following the tone count — fa to si and si to fa are both three tones, but one is a kvarta and the other a kvinta."
+        label={t.s.intervalSet}
+        hint={t.s.intervalSetHint}
         value={settings.intervalSet}
         options={[
-          { id: "full", label: "Everything, including mugdal and muktan" },
-          { id: "basic", label: "Zaka, ktana and gdola only" },
+          { id: "full", label: t.s.intervalFull },
+          { id: "basic", label: t.s.intervalBasic },
         ]}
         onPick={(v) => setSetting("intervalSet", v)}
       />
 
       <SettingGroup
-        label="Clefs"
-        hint="Which clefs the staff drill asks about."
+        label={t.s.clefs}
+        hint={t.s.clefsHint}
         value={settings.clefs}
         options={[
-          { id: "both", label: "Both" },
-          { id: "treble", label: "Treble only" },
-          { id: "bass", label: "Bass only" },
+          { id: "both", label: t.s.both },
+          { id: "treble", label: t.s.trebleOnly },
+          { id: "bass", label: t.s.bassOnly },
         ]}
         onPick={(v) => setSetting("clefs", v)}
       />
 
       <SettingGroup
-        label="Staff difficulty"
-        hint="How far outside the staff the notes go. Wider means more notes to meet, and less repetition."
+        label={t.s.staffDifficulty}
+        hint={t.s.staffDifficultyHint}
         value={settings.staffDifficulty}
         options={[
-          { id: "easy", label: "Inside the staff only" },
-          { id: "medium", label: "Up to two ledger lines" },
-          { id: "hard", label: "Up to three ledger lines" },
+          { id: "easy", label: t.s.onTheLines },
+          { id: "medium", label: t.s.oneLedger },
+          { id: "hard", label: t.s.fourLedgers },
         ]}
         onPick={(v) => setSetting("staffDifficulty", v)}
       />
 
       <SettingGroup
-        label="Building intervals"
-        hint="Place the second note on the staff, or just name it."
+        label={t.s.buildStyle}
+        hint={t.s.buildStyleHint}
         value={settings.buildStyle}
         options={[
-          { id: "staff", label: "Place it on the staff" },
-          { id: "typed", label: "Type the note name" },
+          { id: "staff", label: t.s.placeOnStaff },
+          { id: "typed", label: t.s.typeTheName },
         ]}
         onPick={(v) => setSetting("buildStyle", v)}
       />
 
       <SettingGroup
-        label="Answering the staff drill"
-        hint="Tapping is faster; typing is harder, and better practice."
+        label={t.s.answerStyle}
+        hint={t.s.answerStyleHint}
         value={settings.answerStyle}
         options={[
-          { id: "buttons", label: "Tap a name" },
-          { id: "typing", label: "Type the name" },
+          { id: "buttons", label: t.s.tapAName },
+          { id: "typing", label: t.s.typeIt },
         ]}
         onPick={(v) => setSetting("answerStyle", v)}
       />

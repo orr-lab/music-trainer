@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { StaffMedia, STAFF_COLORS, type StaffGeometry } from "./StaffMedia";
 import { SCALE_ORDER, STAFF_LINES, type Clef } from "@/lib/data/notes";
 import type { ValueOption } from "@/lib/engine/types";
+import { useLang } from "@/components/useLang";
 
 type Alter = -1 | 0 | 1;
 
@@ -55,6 +56,7 @@ export function StaffPicker({
   accepted: string[];
   onAnswer: (value: string) => void;
 }) {
+  const { t } = useLang();
   const steps = options.map((o) => o.value);
   const min = Math.min(...steps);
   const max = Math.max(...steps);
@@ -146,7 +148,7 @@ export function StaffPicker({
               aria-label="Move the note up one step"
               className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
             >
-              &uarr; Up
+              &uarr; {t.q.up}
             </button>
             <button
               type="button"
@@ -154,7 +156,7 @@ export function StaffPicker({
               aria-label="Move the note down one step"
               className="min-h-14 rounded-xl border border-line bg-surface text-lead transition-colors hover:border-muted active:border-accent"
             >
-              &darr; Down
+              &darr; {t.q.down}
             </button>
           </div>
           {/* The sign is part of the answer, not a decoration on it. */}
@@ -189,7 +191,7 @@ export function StaffPicker({
             }`}
           >
             {/* Never name the pending note: reading it back is the exercise. */}
-            {pending === null ? "Tap the staff to place a note" : "Place it here"}
+            {pending === null ? t.q.tapStaff : t.q.placeItHere}
           </button>
         </>
       )}

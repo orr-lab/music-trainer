@@ -3,6 +3,18 @@
  * diagram. All fifteen major keys, in line-of-fifths order.
  */
 
+import type { Lang } from "@/lib/i18n/lang";
+import {
+  FLATS_WORD,
+  FLAT_WORD,
+  MAJOR_WORD,
+  MINOR_WORD,
+  NO_ACCIDENTALS,
+  SHARPS_WORD,
+  SHARP_WORD,
+  SOLFEGE_SYLLABLES,
+} from "@/lib/i18n/music";
+
 export type Naming = "solfege" | "letters";
 
 export interface Tonic {
@@ -11,32 +23,48 @@ export interface Tonic {
   accidental: "" | "#" | "b";
 }
 
-const SOLFEGE: Record<Tonic["letter"], string> = {
-  c: "do",
-  d: "re",
-  e: "mi",
-  f: "fa",
-  g: "sol",
-  a: "la",
-  b: "si",
-};
+const LETTER_ORDER: Tonic["letter"][] = ["c", "d", "e", "f", "g", "a", "b"];
 
-export function tonicName(t: Tonic, naming: Naming): string {
+function syllable(letter: Tonic["letter"], lang: Lang): string {
+  return SOLFEGE_SYLLABLES[lang][LETTER_ORDER.indexOf(letter)];
+}
+
+export function tonicName(
+  t: Tonic,
+  naming: Naming,
+  lang: Lang = "translit",
+): string {
   if (naming === "letters") {
     return t.letter.toUpperCase() + t.accidental;
   }
-  const suffix = t.accidental === "#" ? " diez" : t.accidental === "b" ? " bemol" : "";
-  return SOLFEGE[t.letter] + suffix;
+  const suffix =
+    t.accidental === "#"
+      ? ` ${SHARP_WORD[lang]}`
+      : t.accidental === "b"
+        ? ` ${FLAT_WORD[lang]}`
+        : "";
+  return syllable(t.letter, lang) + suffix;
 }
 
 /** Compact form for the diagram: "sol♭" / "G♭", no mazhor/minor word. */
-export function tonicSymbol(t: Tonic, naming: Naming): string {
-  const base = naming === "letters" ? t.letter.toUpperCase() : SOLFEGE[t.letter];
+export function tonicSymbol(
+  t: Tonic,
+  naming: Naming,
+  lang: Lang = "translit",
+): string {
+  const base =
+    naming === "letters" ? t.letter.toUpperCase() : syllable(t.letter, lang);
   return base + (t.accidental === "#" ? "♯" : t.accidental === "b" ? "♭" : "");
 }
 
-export function keyName(t: Tonic, mode: "major" | "minor", naming: Naming): string {
-  return `${tonicName(t, naming)} ${mode === "major" ? "mazhor" : "minor"}`;
+export function keyName(
+  t: Tonic,
+  mode: "major" | "minor",
+  naming: Naming,
+  lang: Lang = "translit",
+): string {
+  const word = mode === "major" ? MAJOR_WORD[lang] : MINOR_WORD[lang];
+  return `${tonicName(t, naming, lang)} ${word}`;
 }
 
 /** The accidentals of a signature always appear in this order. */
@@ -105,15 +133,23 @@ export function signature(key: KeyRow): Tonic[] {
   return order.slice(0, key.count);
 }
 
-export function signatureText(key: KeyRow, naming: Naming): string {
+export function signatureText(
+  key: KeyRow,
+  naming: Naming,
+  lang: Lang = "translit",
+): string {
   const parts = signature(key);
-  if (parts.length === 0) return "ein simanim";
-  return parts.map((p) => tonicName(p, naming)).join(", ");
+  if (parts.length === 0) return NO_ACCIDENTALS[lang];
+  return parts.map((p) => tonicName(p, naming, lang)).join(", ");
 }
 
-export function countText(key: KeyRow): string {
-  if (key.kind === "none") return "ein simanim";
-  return `${key.count} ${key.kind}`;
+export function countText(key: KeyRow, lang: Lang = "translit"): string {
+  if (key.kind === "none") return NO_ACCIDENTALS[lang];
+  const one = key.count === 1;
+  const word = key.kind === "diezim"
+    ? (one ? SHARP_WORD : SHARPS_WORD)[lang]
+    : (one ? FLAT_WORD : FLATS_WORD)[lang];
+  return `${key.count} ${word}`;
 }
 
 /** What VexFlow calls this key, for `stave.addKeySignature`. */

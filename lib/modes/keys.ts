@@ -1,5 +1,12 @@
 import type { ChoiceOption, Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
+import type { Lang } from "@/lib/i18n/lang";
+import { copy } from "@/lib/i18n/ui";
+import {
+  FLATS_WORD,
+  NO_ACCIDENTALS,
+  SHARPS_WORD,
+} from "@/lib/i18n/music";
 import {
   FLAT_ORDER,
   KEYS,
@@ -20,11 +27,13 @@ const COUNT_OPTIONS: ValueOption[] = Array.from({ length: 8 }, (_, i) => ({
   label: String(i),
 }));
 
-const KIND_OPTIONS: ChoiceOption[] = [
-  { id: "diezim", label: "diezim" },
-  { id: "bemolim", label: "bemolim" },
-  { id: "none", label: "ein simanim" },
-];
+function kindOptions(lang: Lang): ChoiceOption[] {
+  return [
+    { id: "diezim", label: SHARPS_WORD[lang] },
+    { id: "bemolim", label: FLATS_WORD[lang] },
+    { id: "none", label: NO_ACCIDENTALS[lang] },
+  ];
+}
 
 /** More accidentals, more to remember. */
 function weightOf(key: KeyRow): number {
@@ -49,14 +58,15 @@ function neighbours(index: number, howMany: number): KeyRow[] {
 function majorOptions(
   index: number,
   naming: Naming,
+  lang: Lang,
   mode: "major" | "minor" = "major",
 ): ChoiceOption[] {
   return [KEYS[index], ...neighbours(index, 3)].map((k) => ({
     id: k.id,
     label:
       mode === "major"
-        ? keyName(k.tonic, "major", naming)
-        : keyName(k.relativeMinor, "minor", naming),
+        ? keyName(k.tonic, "major", naming, lang)
+        : keyName(k.relativeMinor, "minor", naming, lang),
   }));
 }
 
@@ -67,12 +77,14 @@ export const keysMode: Mode = {
   subtitle: "Ma'agal ha-kvintot",
   blurb: "Key signatures, relative minors, and moving by fifths.",
   pool: (raw) => {
-    const { naming } = readSettings(raw);
+    const { naming, lang } = readSettings(raw);
+    const t = copy(lang).q;
+    const KIND_OPTIONS = kindOptions(lang);
     const questions: Question[] = [];
 
     KEYS.forEach((key, index) => {
-      const major = keyName(key.tonic, "major", naming);
-      const minor = keyName(key.relativeMinor, "minor", naming);
+      const major = keyName(key.tonic, "major", naming, lang);
+      const minor = keyName(key.relativeMinor, "minor", naming, lang);
       const weight = weightOf(key);
 
       // 1. How many accidentals, and which kind?
@@ -80,26 +92,26 @@ export const keysMode: Mode = {
         id: `keys:count:${key.id}`,
         modeId: KEYS_MODE_ID,
         prompt: major,
-        promptSub: "How many accidentals, and which kind?",
+        promptSub: t.howManyAccidentals,
         weight,
         topics: ["key signatures"],
         parts: [
           {
             id: "count",
-            label: "How many",
+            label: t.howMany,
             input: { kind: "value", options: COUNT_OPTIONS },
             accepted: [String(key.count)],
             display: String(key.count),
-            reason: `${major} has ${countText(key)}: ${signatureText(key, naming)}.`,
+            reason: `${major} has ${countText(key, lang)}: ${signatureText(key, naming, lang)}.`,
             topics: ["key signatures"],
           },
           {
             id: "kind",
-            label: "Which kind",
+            label: t.whichKind,
             input: { kind: "choice", options: KIND_OPTIONS },
             accepted: [key.kind],
             display: KIND_OPTIONS.find((o) => o.id === key.kind)?.label ?? key.kind,
-            reason: `${major} has ${countText(key)}: ${signatureText(key, naming)}.`,
+            reason: `${major} has ${countText(key, lang)}: ${signatureText(key, naming, lang)}.`,
             topics: ["key signatures"],
           },
         ],
@@ -111,18 +123,18 @@ export const keysMode: Mode = {
         questions.push({
           id: `keys:which:${key.id}`,
           modeId: KEYS_MODE_ID,
-          prompt: countText(key),
-          promptSub: "Which major key?",
+          prompt: countText(key, lang),
+          promptSub: t.whichMajorKey,
           weight,
           topics: ["key signatures"],
           parts: [
             {
               id: "key",
-              label: "Key",
-              input: { kind: "choice", options: majorOptions(index, naming) },
+              label: t.keyLabel,
+              input: { kind: "choice", options: majorOptions(index, naming, lang) },
               accepted: [key.id],
               display: major,
-              reason: `${countText(key)} is ${major}: ${signatureText(key, naming)}.`,
+              reason: `${countText(key, lang)} is ${major}: ${signatureText(key, naming, lang)}.`,
               shuffle: true,
               topics: ["key signatures"],
             },
@@ -135,14 +147,14 @@ export const keysMode: Mode = {
         id: `keys:relminor:${key.id}`,
         modeId: KEYS_MODE_ID,
         prompt: major,
-        promptSub: "What is the relative minor?",
+        promptSub: t.relativeMinorQ,
         weight,
         topics: ["relative minor"],
         parts: [
           {
             id: "minor",
-            label: "Relative minor",
-            input: { kind: "choice", options: majorOptions(index, naming, "minor") },
+            label: t.relativeMinorLabel,
+            input: { kind: "choice", options: majorOptions(index, naming, lang, "minor") },
             accepted: [key.id],
             display: minor,
             reason: `${minor} shares a signature with ${major} - a terza ktana below the tonic.`,
@@ -156,14 +168,14 @@ export const keysMode: Mode = {
         id: `keys:relmajor:${key.id}`,
         modeId: KEYS_MODE_ID,
         prompt: minor,
-        promptSub: "What is the relative major?",
+        promptSub: t.relativeMajorQ,
         weight,
         topics: ["relative minor"],
         parts: [
           {
             id: "major",
-            label: "Relative major",
-            input: { kind: "choice", options: majorOptions(index, naming) },
+            label: t.relativeMajorLabel,
+            input: { kind: "choice", options: majorOptions(index, naming, lang) },
             accepted: [key.id],
             display: major,
             reason: `${major} shares a signature with ${minor} - a terza ktana above the tonic.`,
@@ -184,21 +196,17 @@ export const keysMode: Mode = {
           id: `keys:fifth-${word}:${key.id}`,
           modeId: KEYS_MODE_ID,
           prompt: major,
-          promptSub: `Move one fifth ${word}`,
+          promptSub: t.moveFifth(word),
           weight,
           topics: ["circle order"],
           parts: [
             {
               id: "target",
               label: `A fifth ${word}`,
-              input: { kind: "choice", options: majorOptions(index + step, naming) },
+              input: { kind: "choice", options: majorOptions(index + step, naming, lang) },
               accepted: [target.id],
-              display: keyName(target.tonic, "major", naming),
-              reason: `A fifth ${word} from ${major} is ${keyName(
-                target.tonic,
-                "major",
-                naming,
-              )} - one accidental ${step === 1 ? "sharper" : "flatter"}.`,
+              display: keyName(target.tonic, "major", naming, lang),
+              reason: `A fifth ${word} from ${major} is ${keyName(target.tonic, "major", naming, lang)} - one accidental ${step === 1 ? "sharper" : "flatter"}.`,
               shuffle: true,
               topics: ["circle order"],
             },
@@ -208,14 +216,14 @@ export const keysMode: Mode = {
 
       // 5. Name the accidentals in order. Only worth asking past the first one.
       if (key.count >= 2) {
-        const correct = signature(key).map((s) => tonicName(s, naming));
+        const correct = signature(key).map((s) => tonicName(s, naming, lang));
         const swapped = [...correct];
         [swapped[correct.length - 2], swapped[correct.length - 1]] = [
           swapped[correct.length - 1],
           swapped[correct.length - 2],
         ];
         const fullOrder = key.kind === "diezim" ? SHARP_ORDER : FLAT_ORDER;
-        const orderText = fullOrder.map((a) => tonicName(a, naming)).join(" ");
+        const orderText = fullOrder.map((a) => tonicName(a, naming, lang)).join(" ");
         const extra = fullOrder[key.count];
         // Correct, last two swapped, one short, and one too many. Each is a
         // mistake someone actually makes.
@@ -237,13 +245,13 @@ export const keysMode: Mode = {
           id: `keys:signature:${key.id}`,
           modeId: KEYS_MODE_ID,
           prompt: major,
-          promptSub: "Name the accidentals, in order",
+          promptSub: t.nameAccidentals,
           weight: weight + 0.3,
           topics: ["accidental order"],
           parts: [
             {
               id: "signature",
-              label: "Signature",
+              label: t.signatureLabel,
               input: { kind: "choice", options },
               accepted: [correct.join(", ")],
               display: correct.join(", "),

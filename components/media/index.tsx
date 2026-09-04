@@ -1,4 +1,5 @@
 import type { Media, ValueOption } from "@/lib/engine/types";
+import type { Lang } from "@/lib/i18n/lang";
 import { CirclePicker } from "./CirclePicker";
 import { PianoKeyboard } from "./PianoKeyboard";
 import { PianoPicker } from "./PianoPicker";
@@ -8,6 +9,9 @@ import { StaffPicker } from "./StaffPicker";
 
 const naming = (value: unknown): "solfege" | "letters" =>
   value === "letters" ? "letters" : "solfege";
+
+const lang = (value: unknown): Lang =>
+  value === "he" ? "he" : value === "en" ? "en" : "translit";
 
 /**
  * Maps a media kind to a renderer. The engine never sees this - a new kind of
@@ -77,7 +81,13 @@ export function AnswerMediaView({
         />
       );
     case "circle-picker":
-      return <CirclePicker naming={naming(render.payload.naming)} {...shared} />;
+      return (
+        <CirclePicker
+          naming={naming(render.payload.naming)}
+          lang={lang(render.payload.lang)}
+          {...shared}
+        />
+      );
     case "signature-writer":
       return (
         <SignatureWriter

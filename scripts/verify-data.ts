@@ -81,7 +81,15 @@ for (const clef of ["treble", "bass"] as const) {
 }
 
 // --- Typed answers -----------------------------------------------------------
-eq("G accepts both systems", N.acceptedNames(p("g", 4)), ["g", "sol", "so"]);
+// The letter, every language's syllable, and the usual variants - so switching
+// language never invalidates a spelling you already type.
+{
+  const g = N.acceptedNames(p("g", 4));
+  eq("G accepts its letter", g.includes("g"), true);
+  eq("G accepts sol", g.includes("sol"), true);
+  eq("G accepts the Hebrew syllable", g.includes("\u05e1\u05d5\u05dc"), true);
+  eq("no spelling is listed twice", g.length, new Set(g).size);
+}
 eq("padding and case are ignored", matches("  SOL ", N.acceptedNames(p("g", 4))), true);
 eq("ti is accepted for si", matches("Ti", N.acceptedNames(p("b", 4))), true);
 eq("an empty answer is never correct", matches("", N.acceptedNames(p("c", 4))), false);

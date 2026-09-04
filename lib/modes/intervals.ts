@@ -2,12 +2,16 @@ import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import {
   INTERVAL_CLASSES,
   classLabel,
+  familyName,
+  intervalName,
   intervalsFor,
   toneLabel,
   toneValues,
   type IntervalRow,
 } from "@/lib/data/intervals";
 import { readSettings } from "@/lib/engine/settings";
+import type { Lang } from "@/lib/i18n/lang";
+import { copy } from "@/lib/i18n/ui";
 import {
   DIFFICULTY_RANGE,
   SCALE_ORDER,
@@ -27,39 +31,41 @@ function toneOptions(rows: IntervalRow[]): ValueOption[] {
   return toneValues(rows).map((value) => ({ value, label: toneLabel(value) }));
 }
 
-const CLASS_OPTIONS = INTERVAL_CLASSES.map((c) => ({
-  id: c.id,
-  label: c.label,
-}));
+function classOptions(lang: Lang) {
+  return INTERVAL_CLASSES.map((c) => ({ id: c.id, label: classLabel(c.id, lang) }));
+}
 
 /** Forward: name the interval, give its size and its classification. */
-function forwardQuestions(rows: IntervalRow[]): Question[] {
+function forwardQuestions(rows: IntervalRow[], lang: Lang): Question[] {
   const TONE_OPTIONS = toneOptions(rows);
+  const t = copy(lang).q;
+  const joinOr = t.orJoin;
+  const CLASS_OPTIONS = classOptions(lang);
   return rows.map((row) => ({
     id: `intervals:forward:${row.id}`,
     modeId: INTERVALS_MODE_ID,
-    prompt: row.name,
-    promptSub: "How many tones, and what class?",
+    prompt: intervalName(row, lang),
+    promptSub: t.howManyTonesAndClass,
     weight: row.weight,
-    topics: [row.family],
+    topics: [familyName(row.family, lang)],
     parts: [
       {
         id: "tones",
-        label: "Tones",
+        label: t.tones,
         input: { kind: "value", options: TONE_OPTIONS },
         accepted: [String(row.tones)],
         display: `${toneLabel(row.tones)} tones`,
         reason: row.note,
-        topics: ["interval size", row.family],
+        topics: ["interval size", familyName(row.family, lang)],
       },
       {
         id: "class",
-        label: "Class",
+        label: t.classLabel,
         input: { kind: "choice", options: CLASS_OPTIONS },
         accepted: row.classes,
-        display: row.classes.map(classLabel).join(" or "),
+        display: row.classes.map((c) => classLabel(c, lang)).join(joinOr),
         reason: row.note,
-        topics: ["interval class", row.family],
+        topics: ["interval class", familyName(row.family, lang)],
       },
     ],
   }));
@@ -74,7 +80,8 @@ function forwardQuestions(rows: IntervalRow[]): Question[] {
  * distractors include the interval that sounds identical but is spelled
  * differently, so the letters have to be counted rather than the semitones.
  */
-function readingQuestions(rows: IntervalRow[]): Question[] {
+function readingQuestions(rows: IntervalRow[], lang: Lang): Question[] {
+  const t = copy(lang).q;
   const questions: Question[] = [];
 
   for (const clef of ["treble", "bass"] as const) {
@@ -115,7 +122,7 @@ function readingQuestions(rows: IntervalRow[]): Question[] {
         questions.push({
           id: `intervals:reading:${clef}:${low.letter}${low.octave}:${interval.id}`,
           modeId: INTERVALS_MODE_ID,
-          prompt: "Which interval is this?",
+          prompt: t.whichInterval,
           media: {
             kind: "staff",
             payload: {
@@ -124,17 +131,20 @@ function readingQuestions(rows: IntervalRow[]): Question[] {
             },
           },
           weight: interval.weight + 0.2,
-          topics: [interval.family],
+          topics: [familyName(interval.family, lang)],
           parts: [
             {
               id: "name",
-              label: "Interval",
+              label: t.intervalLabel,
               input: {
                 kind: "choice",
-                options: choices.map((i) => ({ id: i.id, label: i.name })),
+                options: choices.map((i) => ({
+                  id: i.id,
+                  label: intervalName(i, lang),
+                })),
               },
               accepted: [interval.id],
-              display: interval.name,
+              display: intervalName(interval, lang),
               reason: `${noteName(low, "solfege")} up to ${alteredName(
                 high,
                 "solfege",
@@ -142,7 +152,7 @@ function readingQuestions(rows: IntervalRow[]): Question[] {
                 interval.tones,
               )} tones: a ${interval.name}.`,
               shuffle: true,
-              topics: ["reading intervals", interval.family],
+              topics: ["reading intervals", familyName(interval.family, lang)],
             },
           ],
         });
@@ -160,7 +170,11 @@ export const intervalsMode: Mode = {
   subtitle: "Mirvachim",
   blurb: "Size in tones and classification, both directions.",
   pool: (raw) => {
-    const rows = intervalsFor(readSettings(raw).intervalSet);
-    return [...forwardQuestions(rows), ...readingQuestions(rows)];
+    const settings = readSettings(raw);
+    const rows = intervalsFor(settings.intervalSet);
+    return [
+      ...forwardQuestions(rows, settings.lang),
+      ...readingQuestions(rows, settings.lang),
+    ];
   },
 };

@@ -1,6 +1,8 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
-import { intervalsFor, toneLabel } from "@/lib/data/intervals";
+import { CLEF_NAMES } from "@/lib/i18n/music";
+import { copy } from "@/lib/i18n/ui";
+import { familyName, intervalName, intervalsFor, toneLabel } from "@/lib/data/intervals";
 import {
   DIFFICULTY_RANGE,
   SCALE_ORDER,
@@ -54,6 +56,8 @@ export const buildMode: Mode = {
   blurb: "Given a note and an interval, place the other note.",
   pool: (raw) => {
     const settings = readSettings(raw);
+    const lang = settings.lang;
+    const t = copy(lang).q;
     const rows = intervalsFor(settings.intervalSet);
     const clefs: Clef[] =
       settings.clefs === "both" ? ["treble", "bass"] : [settings.clefs];
@@ -96,16 +100,17 @@ export const buildMode: Mode = {
             const target: AlteredPitch = { ...natural, alter: alter as -1 | 0 | 1 };
 
             const direction = up ? "above" : "below";
-            const startName = noteName(start, settings.naming);
-            const targetName = alteredName(target, settings.naming);
+            const directionText = up ? t.aboveTheNote : t.belowTheNote;
+            const startName = noteName(start, settings.naming, lang);
+            const targetName = alteredName(target, settings.naming, lang);
 
             questions.push({
               id: `build:${clef}:${start.letter}${start.octave}:${
                 up ? "up" : "down"
               }:${interval.id}`,
               modeId: BUILD_MODE_ID,
-              prompt: interval.name,
-              promptSub: `${direction} the note shown`,
+              prompt: intervalName(interval, lang),
+              promptSub: directionText,
               media:
                 settings.buildStyle === "typed"
                   ? { kind: "staff", payload: { clef, notes: vexKey(start) } }
@@ -115,13 +120,15 @@ export const buildMode: Mode = {
               parts: [
                 {
                   id: "note",
-                  label: up ? "The note above" : "The note below",
+                  label: up ? t.noteAbove : t.noteBelow,
                   input:
                     settings.buildStyle === "typed"
                       ? {
                           kind: "text",
                           placeholder:
-                            settings.naming === "solfege" ? "do, fa diez…" : "A–G, F#",
+                            settings.naming === "solfege"
+                              ? t.typePlaceholderSolfege
+                              : t.typePlaceholderLetters,
                         }
                       : {
                           kind: "value",
@@ -147,7 +154,11 @@ export const buildMode: Mode = {
                     natural,
                     settings.naming,
                   )}.`,
-                  topics: ["building intervals", interval.family, `${clef} clef`],
+                  topics: [
+                    "building intervals",
+                    familyName(interval.family, lang),
+                    CLEF_NAMES[clef][lang],
+                  ],
                 },
               ],
             });

@@ -10,6 +10,7 @@ import {
 } from "./StaffMedia";
 import { STAFF_LINES, type Clef } from "@/lib/data/notes";
 import type { ValueOption } from "@/lib/engine/types";
+import { useLang } from "@/components/useLang";
 
 /** Where the accidentals sit horizontally: just after the clef, evenly spaced. */
 const FIRST_X = 58;
@@ -46,6 +47,7 @@ export function SignatureWriter({
   accepted: string[];
   onAnswer: (value: string) => void;
 }) {
+  const { t } = useLang();
   const [placed, setPlaced] = useState<number[]>([]);
   // State, not a ref: the glyph positions are worked out during render.
   const [geometry, setGeometry] = useState<StaffGeometry | null>(null);
@@ -131,7 +133,7 @@ export function SignatureWriter({
       {locked ? null : (
         <>
           <p className="text-center text-content text-muted">
-            {placed.length} of {count} placed
+            {t.q.placedCount(placed.length, count)}
           </p>
           <div className="grid grid-cols-2 gap-4">
             <button
@@ -144,7 +146,7 @@ export function SignatureWriter({
                   : "border-line text-ink active:border-accent"
               }`}
             >
-              Undo
+              {t.q.undo}
             </button>
             <button
               type="button"
@@ -156,7 +158,7 @@ export function SignatureWriter({
                   : "border-line text-muted"
               }`}
             >
-              Done
+              {t.q.done}
             </button>
           </div>
         </>
@@ -164,7 +166,7 @@ export function SignatureWriter({
 
       {state === "wrong" ? (
         <div className="flex flex-col gap-2">
-          <p className="text-content text-muted">How it should look:</p>
+          <p className="text-content text-muted">{t.q.howItLooks}</p>
           <StaffMedia
             clef={clef}
             notes={[]}

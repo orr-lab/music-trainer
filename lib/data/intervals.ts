@@ -4,6 +4,13 @@
  * Adding an interval means adding a row here. No component knows these names.
  */
 
+import type { Lang } from "@/lib/i18n/lang";
+import {
+  CLASS_NAMES,
+  FAMILY_NAMES,
+  INTERVAL_NAMES,
+} from "@/lib/i18n/music";
+
 export type IntervalClassId =
   | "konsonans-mushlam"
   | "konsonans-lo-mushlam"
@@ -290,6 +297,14 @@ export function toneValues(rows: IntervalRow[]): number[] {
   return [...new Set(rows.map((i) => i.tones))].sort((a, b) => a - b);
 }
 
-export function classLabel(id: IntervalClassId): string {
-  return INTERVAL_CLASSES.find((c) => c.id === id)?.label ?? id;
+export function classLabel(id: IntervalClassId, lang: Lang = "translit"): string {
+  return CLASS_NAMES[id]?.[lang] ?? id;
+}
+
+export function intervalName(row: IntervalRow, lang: Lang = "translit"): string {
+  return INTERVAL_NAMES[row.id]?.[lang] ?? row.id;
+}
+
+export function familyName(family: string, lang: Lang = "translit"): string {
+  return FAMILY_NAMES[family]?.[lang] ?? family;
 }

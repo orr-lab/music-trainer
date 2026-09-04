@@ -1,5 +1,8 @@
 "use client";
 
+import type { Lang } from "@/lib/i18n/lang";
+import { MAJOR_WORD, MINOR_WORD } from "@/lib/i18n/music";
+import { copy } from "@/lib/i18n/ui";
 import {
   CIRCLE_POSITIONS,
   countText,
@@ -36,6 +39,7 @@ function position(index: number, radius: number) {
  */
 export function CircleOfFifths({
   naming,
+  lang = "translit",
   selected,
   onSelect,
   showDetail = true,
@@ -43,6 +47,7 @@ export function CircleOfFifths({
   labels = "all",
 }: {
   naming: Naming;
+  lang?: Lang;
   selected: number | null;
   onSelect: (index: number) => void;
   /** The reference page lists what is at the selected position. */
@@ -108,7 +113,7 @@ export function CircleOfFifths({
               key={i}
               role="button"
               tabIndex={0}
-              aria-label={keyName(major.tonic, "major", naming)}
+              aria-label={keyName(major.tonic, "major", naming, lang)}
               aria-pressed={isSelected}
               onClick={() => onSelect(i)}
               onKeyDown={(e) => {
@@ -133,7 +138,7 @@ export function CircleOfFifths({
                 className={marked ? "fill-ground" : "fill-ink"}
                 style={{ fontSize: 13 }}
               >
-                {named ? tonicSymbol(major.tonic, naming) : ""}
+                {named ? tonicSymbol(major.tonic, naming, lang) : ""}
               </text>
               {alt ? (
                 <text
@@ -143,7 +148,7 @@ export function CircleOfFifths({
                   className={marked ? "fill-ground" : "fill-muted"}
                   style={{ fontSize: 10 }}
                 >
-                  {named ? tonicSymbol(alt.tonic, naming) : ""}
+                  {named ? tonicSymbol(alt.tonic, naming, lang) : ""}
                 </text>
               ) : null}
 
@@ -163,7 +168,7 @@ export function CircleOfFifths({
                 className={marked ? "fill-accent" : "fill-muted"}
                 style={{ fontSize: 11 }}
               >
-                {named ? tonicSymbol(major.relativeMinor, naming) : ""}
+                {named ? tonicSymbol(major.relativeMinor, naming, lang) : ""}
               </text>
             </g>
           );
@@ -177,7 +182,7 @@ export function CircleOfFifths({
           className="fill-muted"
           style={{ fontSize: 11 }}
         >
-          mazhor
+          {MAJOR_WORD[lang]}
         </text>
         <text
           x={CENTRE}
@@ -187,7 +192,7 @@ export function CircleOfFifths({
           className="fill-muted"
           style={{ fontSize: 11 }}
         >
-          minor
+          {MINOR_WORD[lang]}
         </text>
       </svg>
 
@@ -198,19 +203,21 @@ export function CircleOfFifths({
             key={key.id}
             className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4"
           >
-            <p className="text-lead">{keyName(key.tonic, "major", naming)}</p>
+            <p className="text-lead">{keyName(key.tonic, "major", naming, lang)}</p>
             <p className="text-content text-muted">
-              {countText(key)}
-              {key.kind === "none" ? "" : ` · ${signatureText(key, naming)}`}
+              {countText(key, lang)}
+              {key.kind === "none" ? "" : ` · ${signatureText(key, naming, lang)}`}
             </p>
             <p className="text-content text-muted">
-              Relative minor: {keyName(key.relativeMinor, "minor", naming)}
+              {copy(lang).relativeMinor(
+                keyName(key.relativeMinor, "minor", naming, lang),
+              )}
             </p>
           </div>
         ))}
         {keys.length > 1 ? (
           <p className="text-content text-muted">
-            These two are the same sounding key, spelled two ways.
+            {copy(lang).enharmonicNote}
           </p>
         ) : null}
       </div>

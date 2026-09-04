@@ -1,5 +1,7 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
+import { CLEF_NAMES } from "@/lib/i18n/music";
+import { copy } from "@/lib/i18n/ui";
 import {
   DIFFICULTY_RANGE,
   SCALE_ORDER,
@@ -24,6 +26,8 @@ export const placeNoteMode: Mode = {
   blurb: "Given a name, put the note on the staff.",
   pool: (raw) => {
     const settings = readSettings(raw);
+    const lang = settings.lang;
+    const t = copy(lang).q;
     const clefs: Clef[] =
       settings.clefs === "both" ? ["treble", "bass"] : [settings.clefs];
 
@@ -35,7 +39,7 @@ export const placeNoteMode: Mode = {
       );
       const positions: ValueOption[] = range.map((p) => ({
         value: step(p),
-        label: noteName(p, settings.naming),
+        label: noteName(p, settings.naming, lang),
       }));
 
       for (const letter of SCALE_ORDER) {
@@ -44,19 +48,19 @@ export const placeNoteMode: Mode = {
 
         for (const alter of [0, 1, -1] as const) {
           const target: AlteredPitch = { ...matching[0], alter };
-          const name = alteredName(target, settings.naming);
+          const name = alteredName(target, settings.naming, lang);
 
           questions.push({
             id: `place-note:${clef}:${letter}${alterSuffix(alter)}`,
             modeId: PLACE_NOTE_MODE_ID,
             prompt: name,
-            promptSub: `put it on the ${clef} staff`,
+            promptSub: t.putItOn(CLEF_NAMES[clef][lang]),
             weight: alter === 0 ? 1 : 1.2,
             topics: ["writing notes"],
             parts: [
               {
                 id: "position",
-                label: "Position",
+                label: t.positionLabel,
                 input: {
                   kind: "value",
                   options: positions,
@@ -70,11 +74,11 @@ export const placeNoteMode: Mode = {
                   /\.$/,
                   "",
                 )}${matching.length > 1 ? ", or any other octave of it" : ""}`,
-                reason: `Any ${name} counts. The lowest one on this staff is the ${positionText(
+                reason: `Any ${name} counts. The lowest one on this staff: ${positionText(
                   matching[0],
                   clef,
                 ).toLowerCase()}`,
-                topics: ["writing notes", `${clef} clef`],
+                topics: ["writing notes", CLEF_NAMES[clef][lang]],
               },
             ],
           });

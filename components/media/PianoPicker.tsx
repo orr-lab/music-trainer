@@ -4,6 +4,7 @@ import { useState } from "react";
 import { PianoKeyboard } from "./PianoKeyboard";
 import { STAFF_COLORS } from "./StaffMedia";
 import type { ValueOption } from "@/lib/engine/types";
+import { useLang } from "@/components/useLang";
 
 /**
  * Pick a key on the piano.
@@ -28,6 +29,7 @@ export function PianoPicker({
   accepted: string[];
   onAnswer: (value: string) => void;
 }) {
+  const { t } = useLang();
   const [pending, setPending] = useState<number | null>(null);
 
   const marks = [{ semitone: start, color: STAFF_COLORS.muted }];
@@ -68,7 +70,7 @@ export function PianoPicker({
           }`}
         >
           {/* Naming the key would hand over the answer. */}
-          {pending === null ? "Tap a key" : "Choose this key"}
+          {pending === null ? t.q.tapKey : t.q.chooseKey}
         </button>
       )}
     </div>

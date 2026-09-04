@@ -5,6 +5,9 @@
  * about accidentals, which belong to the key-signature work in Mode 3.
  */
 
+import type { Lang } from "@/lib/i18n/lang";
+import { FLAT_WORD, SHARP_WORD, SOLFEGE_SYLLABLES } from "@/lib/i18n/music";
+
 export type Clef = "treble" | "bass";
 export type Letter = "c" | "d" | "e" | "f" | "g" | "a" | "b";
 export type StaffDifficulty = "easy" | "medium" | "hard";
@@ -57,13 +60,22 @@ export function vexKey(p: Pitch): string {
   return `${p.letter}/${p.octave}`;
 }
 
-export function noteName(p: Pitch, naming: "solfege" | "letters"): string {
-  return naming === "solfege" ? SOLFEGE[p.letter] : p.letter.toUpperCase();
+export function noteName(
+  p: Pitch,
+  naming: "solfege" | "letters",
+  lang: Lang = "translit",
+): string {
+  if (naming === "letters") return p.letter.toUpperCase();
+  return SOLFEGE_SYLLABLES[lang][SCALE_ORDER.indexOf(p.letter)];
 }
 
 /** Both naming systems are always accepted, whichever one is on display. */
 export function acceptedNames(p: Pitch): string[] {
-  return [p.letter, SOLFEGE[p.letter], ...(ALTERNATES[p.letter] ?? [])];
+  const index = SCALE_ORDER.indexOf(p.letter);
+  const syllables = Object.values(SOLFEGE_SYLLABLES).map((set) => set[index]);
+  return [
+    ...new Set([p.letter, ...syllables, ...(ALTERNATES[p.letter] ?? [])]),
+  ];
 }
 
 /**
@@ -90,11 +102,13 @@ export function vexKeyAltered(p: AlteredPitch): string {
 export function alteredName(
   p: AlteredPitch,
   naming: "solfege" | "letters",
+  lang: Lang = "translit",
 ): string {
-  const base = noteName(p, naming);
+  const base = noteName(p, naming, lang);
   if (p.alter === 0) return base;
   if (naming === "letters") return base + alterSuffix(p.alter);
-  return `${base} ${p.alter === 1 ? "diez" : "bemol"}`;
+  const word = p.alter === 1 ? SHARP_WORD[lang] : FLAT_WORD[lang];
+  return `${base} ${word}`;
 }
 
 /** Everything a typed answer may spell it as. */
