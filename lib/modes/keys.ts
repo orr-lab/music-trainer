@@ -1,6 +1,7 @@
 import type { ChoiceOption, Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
 import type { Lang } from "@/lib/i18n/lang";
+import { reasons } from "@/lib/i18n/reasons";
 import { copy } from "@/lib/i18n/ui";
 import {
   FLATS_WORD,
@@ -79,6 +80,7 @@ export const keysMode: Mode = {
   pool: (raw) => {
     const { naming, lang } = readSettings(raw);
     const t = copy(lang).q;
+    const r = reasons(lang);
     const KIND_OPTIONS = kindOptions(lang);
     const questions: Question[] = [];
 
@@ -102,7 +104,7 @@ export const keysMode: Mode = {
             input: { kind: "value", options: COUNT_OPTIONS },
             accepted: [String(key.count)],
             display: String(key.count),
-            reason: `${major} has ${countText(key, lang)}: ${signatureText(key, naming, lang)}.`,
+            reason: r.keyHas(major, countText(key, lang), signatureText(key, naming, lang)),
             topics: ["key signatures"],
           },
           {
@@ -111,7 +113,7 @@ export const keysMode: Mode = {
             input: { kind: "choice", options: KIND_OPTIONS },
             accepted: [key.kind],
             display: KIND_OPTIONS.find((o) => o.id === key.kind)?.label ?? key.kind,
-            reason: `${major} has ${countText(key, lang)}: ${signatureText(key, naming, lang)}.`,
+            reason: r.keyHas(major, countText(key, lang), signatureText(key, naming, lang)),
             topics: ["key signatures"],
           },
         ],
@@ -134,7 +136,7 @@ export const keysMode: Mode = {
               input: { kind: "choice", options: majorOptions(index, naming, lang) },
               accepted: [key.id],
               display: major,
-              reason: `${countText(key, lang)} is ${major}: ${signatureText(key, naming, lang)}.`,
+              reason: r.signatureIs(countText(key, lang), major, signatureText(key, naming, lang)),
               shuffle: true,
               topics: ["key signatures"],
             },
@@ -157,7 +159,7 @@ export const keysMode: Mode = {
             input: { kind: "choice", options: majorOptions(index, naming, lang, "minor") },
             accepted: [key.id],
             display: minor,
-            reason: `${minor} shares a signature with ${major} - a terza ktana below the tonic.`,
+            reason: r.sharesSignature(minor, major, "below"),
             shuffle: true,
             topics: ["relative minor"],
           },
@@ -178,7 +180,7 @@ export const keysMode: Mode = {
             input: { kind: "choice", options: majorOptions(index, naming, lang) },
             accepted: [key.id],
             display: major,
-            reason: `${major} shares a signature with ${minor} - a terza ktana above the tonic.`,
+            reason: r.sharesSignature(major, minor, "above"),
             shuffle: true,
             topics: ["relative minor"],
           },
@@ -190,6 +192,7 @@ export const keysMode: Mode = {
         [1, "up"],
         [-1, "down"],
       ] as const) {
+        const up = step === 1 ? "above" : "below";
         const target = KEYS[index + step];
         if (!target) continue;
         questions.push({
@@ -202,11 +205,15 @@ export const keysMode: Mode = {
           parts: [
             {
               id: "target",
-              label: `A fifth ${word}`,
+              label: t.moveFifth(word),
               input: { kind: "choice", options: majorOptions(index + step, naming, lang) },
               accepted: [target.id],
               display: keyName(target.tonic, "major", naming, lang),
-              reason: `A fifth ${word} from ${major} is ${keyName(target.tonic, "major", naming, lang)} - one accidental ${step === 1 ? "sharper" : "flatter"}.`,
+              reason: r.fifthFrom(
+                up,
+                major,
+                keyName(target.tonic, "major", naming, lang),
+              ),
               shuffle: true,
               topics: ["circle order"],
             },
@@ -232,7 +239,7 @@ export const keysMode: Mode = {
           swapped.join(", "),
           correct.slice(0, -1).join(", "),
           extra
-            ? [...correct, tonicName(extra, naming)].join(", ")
+            ? [...correct, tonicName(extra, naming, lang)].join(", ")
             : correct.slice(1).join(", "),
         ];
         const options: ChoiceOption[] = [];
@@ -255,9 +262,10 @@ export const keysMode: Mode = {
               input: { kind: "choice", options },
               accepted: [correct.join(", ")],
               display: correct.join(", "),
-              reason: `${
-                key.kind === "diezim" ? "Diezim" : "Bemolim"
-              } always come in this order: ${orderText}.`,
+              reason: r.signatureOrder(
+                key.kind === "diezim" ? SHARPS_WORD[lang] : FLATS_WORD[lang],
+                orderText,
+              ),
               shuffle: true,
               topics: ["accidental order"],
             },

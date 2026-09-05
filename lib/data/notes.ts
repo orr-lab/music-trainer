@@ -6,7 +6,13 @@
  */
 
 import type { Lang } from "@/lib/i18n/lang";
-import { FLAT_WORD, SHARP_WORD, SOLFEGE_SYLLABLES } from "@/lib/i18n/music";
+import {
+  CLEF_NAMES,
+  FLAT_WORD,
+  SHARP_WORD,
+  SOLFEGE_SYLLABLES,
+} from "@/lib/i18n/music";
+import { reasons } from "@/lib/i18n/reasons";
 
 export type Clef = "treble" | "bass";
 export type Letter = "c" | "d" | "e" | "f" | "g" | "a" | "b";
@@ -188,26 +194,28 @@ export function ledgerLines(p: Pitch, clef: Clef): number {
   return 0;
 }
 
-const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
-
 /** A one-line description of where the note sits - the wrong-answer hint. */
-export function positionText(p: Pitch, clef: Clef): string {
+export function positionText(
+  p: Pitch,
+  clef: Clef,
+  lang: Lang = "translit",
+): string {
   const { bottom, top } = STAFF_LINES[clef];
   const s = step(p);
   const ledgers = ledgerLines(p, clef);
+  const r = reasons(lang);
+  const clefName = CLEF_NAMES[clef][lang];
 
   if (s >= bottom && s <= top) {
     const offset = s - bottom;
-    const onLine = offset % 2 === 0;
     const index = Math.floor(offset / 2);
-    return onLine
-      ? `${ORDINALS[index]} line of the ${clef} staff, counting up.`
-      : `${ORDINALS[index]} space of the ${clef} staff, counting up.`;
+    return offset % 2 === 0
+      ? r.onLine(index, clefName)
+      : r.onSpace(index, clefName);
   }
 
   const where = s > top ? "above" : "below";
-  const lines = ledgers === 1 ? "1 ledger line" : `${ledgers} ledger lines`;
   return ledgers === 0
-    ? `Just ${where} the ${clef} staff, in the space next to it.`
-    : `${lines} ${where} the ${clef} staff.`;
+    ? r.justOutside(where, clefName)
+    : r.ledgers(ledgers, where, clefName);
 }

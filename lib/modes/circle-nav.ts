@@ -1,5 +1,6 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
+import { reasons } from "@/lib/i18n/reasons";
 import { copy } from "@/lib/i18n/ui";
 import {
   CIRCLE_POSITIONS,
@@ -12,15 +13,6 @@ import {
 export const CIRCLE_NAV_MODE_ID = "circle-nav";
 
 /** Always the short way round: nobody counts ten steps clockwise. */
-function placeOnCircle(index: number): string {
-  if (index === 0) return "at the top of the circle";
-  const clockwise = index <= 6;
-  const steps = clockwise ? index : 12 - index;
-  return `${steps} ${steps === 1 ? "step" : "steps"} ${
-    clockwise ? "clockwise" : "anticlockwise"
-  } from the top`;
-}
-
 export const circleNavMode: Mode = {
   id: CIRCLE_NAV_MODE_ID,
   title: "Finding keys on the circle",
@@ -30,6 +22,7 @@ export const circleNavMode: Mode = {
   pool: (raw) => {
     const { naming, lang } = readSettings(raw);
     const t = copy(lang).q;
+    const r = reasons(lang);
     const questions: Question[] = [];
 
     const positions: ValueOption[] = CIRCLE_POSITIONS.map((slot, i) => {
@@ -67,9 +60,11 @@ export const circleNavMode: Mode = {
               input: { kind: "value", options: positions, render },
               accepted: [String(targetIndex)],
               display: targetName,
-              reason: `A fifth ${word} from ${here} is ${targetName} - one step ${
-                step === 1 ? "clockwise" : "anticlockwise"
-              } round the circle.`,
+              reason: r.fifthRound(
+                step === 1 ? "above" : "below",
+                here,
+                targetName,
+              ),
               topics: ["finding keys on the circle"],
             },
           ],
@@ -95,12 +90,17 @@ export const circleNavMode: Mode = {
               input: { kind: "value", options: positions, render },
               accepted: [String(index)],
               display: keyName(spelling.tonic, "major", naming, lang),
-              reason: `${countText(spelling, lang)} is ${keyName(
-                spelling.tonic,
-                "major",
-                naming,
-                lang,
-              )}, ${placeOnCircle(index)}.`,
+              reason:
+                index === 0
+                  ? r.atTopOfCircle(
+                      countText(spelling, lang),
+                      keyName(spelling.tonic, "major", naming, lang),
+                    )
+                  : r.stepsFromC(
+                      countText(spelling, lang),
+                      keyName(spelling.tonic, "major", naming, lang),
+                      index,
+                    ),
               topics: ["finding keys on the circle"],
             },
           ],

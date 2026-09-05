@@ -414,6 +414,46 @@ const LETTER_SPAN: Record<string, number[]> = {
   }
 }
 
+// --- Translation -------------------------------------------------------------
+// Every string a question shows must actually be in the chosen language. This
+// is how 921 English strings survived behind a translated interface: the
+// buttons were translated and the questions were not.
+{
+  // Legitimately Latin whatever the language: note letters, key specs, and the
+  // letter-name spelling shown in brackets next to a translated name.
+  const bare = /^[A-G][#b]?\d?$/;
+  const withoutSpellings = (value: string) =>
+    value.replace(/\([A-G][#b]?\d?\)/g, "");
+  const hasLatinWord = (value: string) => /[A-Za-z]{2,}/.test(withoutSpellings(value));
+
+  for (const mode of MODES) {
+    const pool = mode.pool({
+      ...DEFAULT_SETTINGS,
+      lang: "he",
+    } as unknown as ModeSettings);
+
+    const offenders = new Set<string>();
+    for (const q of pool) {
+      const strings: (string | undefined)[] = [q.prompt, q.promptSub];
+      for (const part of q.parts) {
+        strings.push(part.label, part.display, part.reason);
+        if (part.input.kind !== "text") {
+          for (const option of part.input.options) strings.push(String(option.label));
+        }
+      }
+      for (const value of strings) {
+        if (!value || bare.test(value.trim())) continue;
+        if (hasLatinWord(value)) offenders.add(value.slice(0, 70));
+      }
+    }
+    eq(
+      `${mode.id}: nothing left in English when the language is Hebrew`,
+      [...offenders],
+      [],
+    );
+  }
+}
+
 // --- Selection ---------------------------------------------------------------
 // A seeded generator, so a failure here is reproducible. mulberry32 rather
 // than a plain LCG: a linear generator correlates badly with a weighted scan

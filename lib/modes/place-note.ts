@@ -1,6 +1,7 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
 import { CLEF_NAMES } from "@/lib/i18n/music";
+import { reasons } from "@/lib/i18n/reasons";
 import { copy } from "@/lib/i18n/ui";
 import {
   DIFFICULTY_RANGE,
@@ -28,6 +29,7 @@ export const placeNoteMode: Mode = {
     const settings = readSettings(raw);
     const lang = settings.lang;
     const t = copy(lang).q;
+    const r = reasons(lang);
     const clefs: Clef[] =
       settings.clefs === "both" ? ["treble", "bass"] : [settings.clefs];
 
@@ -70,14 +72,17 @@ export const placeNoteMode: Mode = {
                 // lives on this clef, and which sign it needs - not which one
                 // of its octaves was meant.
                 accepted: matching.map((p) => answerValue({ ...p, alter })),
-                display: `${name} - ${positionText(matching[0], clef).replace(
-                  /\.$/,
-                  "",
-                )}${matching.length > 1 ? ", or any other octave of it" : ""}`,
-                reason: `Any ${name} counts. The lowest one on this staff: ${positionText(
+                display: `${name} - ${positionText(
                   matching[0],
                   clef,
-                ).toLowerCase()}`,
+                  lang,
+                ).replace(/[.\u05C3]$/, "")}${
+                  matching.length > 1 ? r.orAnyOctave : ""
+                }`,
+                reason: r.anyOctave(
+                  name,
+                  positionText(matching[0], clef, lang).toLowerCase(),
+                ),
                 topics: ["writing notes", CLEF_NAMES[clef][lang]],
               },
             ],

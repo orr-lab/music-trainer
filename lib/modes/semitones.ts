@@ -1,5 +1,6 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
+import { reasons } from "@/lib/i18n/reasons";
 import { copy } from "@/lib/i18n/ui";
 import {
   familyName,
@@ -30,6 +31,7 @@ export const semitonesMode: Mode = {
     const naming = settings.naming;
     const lang = settings.lang;
     const t = copy(lang).q;
+    const r = reasons(lang);
     // Every interval except the unison, which has nothing to count.
     const COUNTABLE = intervalsFor(settings.intervalSet).filter(
       (i) => i.tones > 0,
@@ -78,13 +80,12 @@ export const semitonesMode: Mode = {
                 },
                 accepted: [String(target)],
                 display: keyName(target, naming, lang),
-                reason: `A ${interval.name} is ${toneLabel(
-                  interval.tones,
-                )} tones, so ${semitones} semitones. Count them: ${countingRun(
-                  start,
-                  target,
-                  naming,
-                )}.`,
+                reason: r.countUp(
+                  intervalName(interval, lang),
+                  toneLabel(interval.tones),
+                  semitones,
+                  countingRun(start, target, naming, lang),
+                ),
                 topics: ["counting semitones", familyName(interval.family, lang)],
               },
             ],
@@ -121,15 +122,14 @@ export const semitonesMode: Mode = {
               label: t.tones,
               input: { kind: "value", options: TONE_OPTIONS },
               accepted: [String(tones)],
-              display: `${toneLabel(tones)} tones - ${allNames}`,
-              reason: `${tones * 2} semitones, which is ${toneLabel(
-                tones,
-              )} tones: ${allNames}. On a keyboard the spelling is invisible - it is the letters that decide the name. Count them: ${countingRun(
-                start,
-                target,
-                naming,
-              )}.`,
-              topics: ["counting semitones", interval.family],
+              display: `${r.tones(toneLabel(tones))} - ${allNames}`,
+              reason: `${r.measured(
+                tones * 2,
+                toneLabel(tones),
+                allNames,
+                countingRun(start, target, naming, lang),
+              )} ${r.keyboardSpelling}`,
+              topics: ["counting semitones", familyName(interval.family, lang)],
             },
           ],
         });

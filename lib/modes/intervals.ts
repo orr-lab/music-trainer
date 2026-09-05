@@ -11,6 +11,8 @@ import {
 } from "@/lib/data/intervals";
 import { readSettings } from "@/lib/engine/settings";
 import type { Lang } from "@/lib/i18n/lang";
+import { intervalNote } from "@/lib/i18n/music";
+import { reasons } from "@/lib/i18n/reasons";
 import { copy } from "@/lib/i18n/ui";
 import {
   DIFFICULTY_RANGE,
@@ -41,6 +43,7 @@ function forwardQuestions(rows: IntervalRow[], lang: Lang): Question[] {
   const t = copy(lang).q;
   const joinOr = t.orJoin;
   const CLASS_OPTIONS = classOptions(lang);
+  const r = reasons(lang);
   return rows.map((row) => ({
     id: `intervals:forward:${row.id}`,
     modeId: INTERVALS_MODE_ID,
@@ -54,8 +57,8 @@ function forwardQuestions(rows: IntervalRow[], lang: Lang): Question[] {
         label: t.tones,
         input: { kind: "value", options: TONE_OPTIONS },
         accepted: [String(row.tones)],
-        display: `${toneLabel(row.tones)} tones`,
-        reason: row.note,
+        display: r.tones(toneLabel(row.tones)),
+        reason: intervalNote(row.id, lang),
         topics: ["interval size", familyName(row.family, lang)],
       },
       {
@@ -64,7 +67,7 @@ function forwardQuestions(rows: IntervalRow[], lang: Lang): Question[] {
         input: { kind: "choice", options: CLASS_OPTIONS },
         accepted: row.classes,
         display: row.classes.map((c) => classLabel(c, lang)).join(joinOr),
-        reason: row.note,
+        reason: intervalNote(row.id, lang),
         topics: ["interval class", familyName(row.family, lang)],
       },
     ],
@@ -82,6 +85,7 @@ function forwardQuestions(rows: IntervalRow[], lang: Lang): Question[] {
  */
 function readingQuestions(rows: IntervalRow[], lang: Lang): Question[] {
   const t = copy(lang).q;
+  const r = reasons(lang);
   const questions: Question[] = [];
 
   for (const clef of ["treble", "bass"] as const) {
@@ -145,12 +149,13 @@ function readingQuestions(rows: IntervalRow[], lang: Lang): Question[] {
               },
               accepted: [interval.id],
               display: intervalName(interval, lang),
-              reason: `${noteName(low, "solfege")} up to ${alteredName(
-                high,
-                "solfege",
-              )} is ${interval.letterSpan + 1} letters and ${toneLabel(
-                interval.tones,
-              )} tones: a ${interval.name}.`,
+              reason: r.readingInterval(
+                noteName(low, "solfege", lang),
+                alteredName(high, "solfege", lang),
+                interval.letterSpan + 1,
+                toneLabel(interval.tones),
+                intervalName(interval, lang),
+              ),
               shuffle: true,
               topics: ["reading intervals", familyName(interval.family, lang)],
             },

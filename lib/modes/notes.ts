@@ -71,7 +71,7 @@ export const notesMode: Mode = {
               // Both naming systems are always accepted.
               accepted: acceptedNames(pitch),
               display: both,
-              reason: positionText(pitch, clef),
+              reason: positionText(pitch, clef, lang),
               topics: [
                 CLEF_NAMES[clef][lang],
                 ...(ledgers > 0 ? ["ledger lines"] : []),

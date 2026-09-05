@@ -1,6 +1,8 @@
 import type { ChoiceOption, Mode, Question } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
 import type { Lang } from "@/lib/i18n/lang";
+import { NO_ACCIDENTALS } from "@/lib/i18n/music";
+import { reasons } from "@/lib/i18n/reasons";
 import { copy } from "@/lib/i18n/ui";
 import {
   KEYS,
@@ -50,6 +52,7 @@ export const signaturesMode: Mode = {
   pool: (raw) => {
     const { naming, lang } = readSettings(raw);
     const t = copy(lang).q;
+    const r = reasons(lang);
     const clefs: Clef[] = ["treble", "bass"];
     const questions: Question[] = [];
 
@@ -59,7 +62,7 @@ export const signaturesMode: Mode = {
         const minor = keyName(key.relativeMinor, "minor", naming, lang);
         const written =
           key.kind === "none"
-            ? "No accidentals at all"
+            ? NO_ACCIDENTALS[lang]
             : `${countText(key, lang)}: ${signatureText(key, naming, lang)}`;
 
         for (const mode of ["major", "minor"] as const) {
@@ -80,7 +83,7 @@ export const signaturesMode: Mode = {
                 input: { kind: "choice", options: options(index, naming, lang, mode) },
                 accepted: [key.id],
                 display: mode === "major" ? major : minor,
-                reason: `${written}. That signature is ${major}, or ${minor}.`,
+                reason: r.thatSignatureIs(written, major, minor),
                 shuffle: true,
                 topics: ["reading key signatures"],
               },

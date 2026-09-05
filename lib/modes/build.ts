@@ -1,6 +1,8 @@
 import type { Mode, Question, ValueOption } from "@/lib/engine/types";
 import { readSettings } from "@/lib/engine/settings";
 import { CLEF_NAMES } from "@/lib/i18n/music";
+import type { Lang } from "@/lib/i18n/lang";
+import { reasons } from "@/lib/i18n/reasons";
 import { copy } from "@/lib/i18n/ui";
 import { familyName, intervalName, intervalsFor, toneLabel } from "@/lib/data/intervals";
 import {
@@ -38,12 +40,13 @@ function letterRun(
   from: Pitch,
   to: Pitch,
   naming: "solfege" | "letters",
+  lang: Lang = "translit",
 ): string {
   const distance = step(to) - step(from);
   const direction = distance >= 0 ? 1 : -1;
   const names: string[] = [];
   for (let i = 0; i <= Math.abs(distance); i++) {
-    names.push(noteName(pitchAt(from, i * direction), naming));
+    names.push(noteName(pitchAt(from, i * direction), naming, lang));
   }
   return names.join(" ");
 }
@@ -58,6 +61,7 @@ export const buildMode: Mode = {
     const settings = readSettings(raw);
     const lang = settings.lang;
     const t = copy(lang).q;
+    const r = reasons(lang);
     const rows = intervalsFor(settings.intervalSet);
     const clefs: Clef[] =
       settings.clefs === "both" ? ["treble", "bass"] : [settings.clefs];
@@ -71,7 +75,7 @@ export const buildMode: Mode = {
       // Every position the answer could be placed on, for the staff picker.
       const positions: ValueOption[] = range.map((p) => ({
         value: step(p),
-        label: noteName(p, settings.naming),
+        label: noteName(p, settings.naming, lang),
       }));
 
       for (const start of range) {
@@ -99,7 +103,6 @@ export const buildMode: Mode = {
             if (alter < -1 || alter > 1) continue;
             const target: AlteredPitch = { ...natural, alter: alter as -1 | 0 | 1 };
 
-            const direction = up ? "above" : "below";
             const directionText = up ? t.aboveTheNote : t.belowTheNote;
             const startName = noteName(start, settings.naming, lang);
             const targetName = alteredName(target, settings.naming, lang);
@@ -145,15 +148,15 @@ export const buildMode: Mode = {
                   display: `${targetName} (${target.letter.toUpperCase()}${
                     target.alter === 1 ? "#" : target.alter === -1 ? "b" : ""
                   }${target.octave})`,
-                  reason: `A ${interval.name} is ${
-                    interval.letterSpan + 1
-                  } letters and ${toneLabel(
-                    interval.tones,
-                  )} tones, so ${direction} ${startName} it lands on ${targetName}. Count the letters: ${letterRun(
-                    start,
-                    natural,
-                    settings.naming,
-                  )}.`,
+                  reason: r.buildInterval(
+                    intervalName(interval, lang),
+                    interval.letterSpan + 1,
+                    toneLabel(interval.tones),
+                    up ? "above" : "below",
+                    startName,
+                    targetName,
+                    letterRun(start, natural, settings.naming, lang),
+                  ),
                   topics: [
                     "building intervals",
                     familyName(interval.family, lang),
