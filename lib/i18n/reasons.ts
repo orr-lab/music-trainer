@@ -50,6 +50,14 @@ export interface Reasons {
   atTopOfCircle: (count: string, key: string) => string;
   stepsFromC: (count: string, key: string, steps: number) => string;
   keyboardSpelling: string;
+  /** The whole scale spelled out, so the answer is seen in its context. */
+  scaleDegree: (key: string, spelling: string, degree: string, note: string) => string;
+  scaleMembership: (
+    note: string,
+    key: string,
+    inScale: boolean,
+    spelling: string,
+  ) => string;
 }
 
 const ORDINALS: Record<Lang, string[]> = {
@@ -108,6 +116,10 @@ const english: Reasons = {
     `${count} is ${key}, ${steps} ${steps === 1 ? "step" : "steps"} clockwise from the top.`,
   keyboardSpelling:
     "On a keyboard the spelling is invisible - it is the letters that decide the name.",
+  scaleDegree: (key, spelling, degree, note) =>
+    `${key} is ${spelling}. Counting up from the tonic, the ${degree} is ${note}.`,
+  scaleMembership: (note, key, inScale, spelling) =>
+    `${key} is ${spelling}. ${note} is ${inScale ? "in it" : "not in it"}.`,
 };
 
 const hebrew: Reasons = {
@@ -163,6 +175,10 @@ const hebrew: Reasons = {
     `הסולם עם ${count} הוא ${key}, ${steps} צעדים עם כיוון השעון מלמעלה.`,
   keyboardSpelling:
     "על הקלידים לא רואים את הכתיב - האותיות הן שקובעות את שם המרווח.",
+  scaleDegree: (key, spelling, degree, note) =>
+    `${key} הוא ${spelling}. סופרים מהטוניקה למעלה, וה${degree} היא ${note}.`,
+  scaleMembership: (note, key, inScale, spelling) =>
+    `${key} הוא ${spelling}. ${note} ${inScale ? "נמצא בו" : "לא נמצא בו"}.`,
 };
 
 const translit: Reasons = {

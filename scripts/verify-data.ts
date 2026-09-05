@@ -414,6 +414,78 @@ const LETTER_SPAN: Record<string, number[]> = {
   }
 }
 
+// --- Answerable in every language --------------------------------------------
+// The per-question checks above run on the default settings only, which is how
+// a normalizer that deleted every Hebrew character went unnoticed: in Hebrew,
+// any question whose options were Hebrew words graded every answer wrong.
+for (const lang of ["translit", "he", "en"] as const) {
+  for (const mode of MODES) {
+    const pool = mode.pool({ ...DEFAULT_SETTINGS, lang } as unknown as ModeSettings);
+    const broken: string[] = [];
+    for (const q of pool) {
+      for (const part of q.parts) {
+        if (part.input.kind === "text") continue;
+        const offered =
+          part.input.kind === "choice"
+            ? part.input.options.map((o) => o.id)
+            : part.input.options.map((o) => String(o.value));
+        // Exactly one thing must be gradeable as correct, and picking it must
+        // actually come out correct.
+        const winners = offered.filter((o) => matches(o, part.accepted));
+        if (part.input.kind === "choice" && winners.length === 0) {
+          broken.push(`${q.id}/${part.id}`);
+        }
+      }
+    }
+    eq(`${mode.id} in ${lang}: every question can be answered correctly`, broken, []);
+  }
+}
+
+// --- Major scales ------------------------------------------------------------
+// Checked against the pattern rather than against how they were built: a major
+// scale is seven different letters, and tone tone semitone tone tone tone
+// semitone. Anything satisfying both is the right scale.
+{
+  const SEMI: Record<string, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
+  const pitch = (t: K.Tonic) =>
+    SEMI[t.letter] + (t.accidental === "#" ? 1 : t.accidental === "b" ? -1 : 0);
+  const MAJOR_STEPS = [2, 2, 1, 2, 2, 2, 1];
+
+  for (const key of K.KEYS) {
+    const notes = K.scaleNotes(key);
+    eq(`${key.id}: seven notes`, notes.length, 7);
+    eq(
+      `${key.id}: one of each letter`,
+      new Set(notes.map((n) => n.letter)).size,
+      7,
+    );
+    eq(`${key.id}: starts on its own tonic`, notes[0], key.tonic);
+
+    const steps = notes.map((n, i) => {
+      const next = i === 6 ? { ...key.tonic } : notes[i + 1];
+      return ((pitch(next) - pitch(n) + 12) % 12) || 12;
+    });
+    eq(`${key.id}: tone tone semitone tone tone tone semitone`, steps, MAJOR_STEPS);
+  }
+
+  // The scale and its signature must agree, since one is derived from the other.
+  for (const key of K.KEYS) {
+    const altered = K.scaleNotes(key).filter((n) => n.accidental !== "").length;
+    eq(`${key.id}: as many altered notes as the signature has`, altered, key.count);
+  }
+
+  eq(
+    "la mazhor spells out correctly",
+    K.scaleText(K.keyById("a")!, "solfege", "translit"),
+    "la si do diez re mi fa diez sol diez",
+  );
+  eq(
+    "re bemol mazhor spells out correctly",
+    K.scaleText(K.keyById("db")!, "letters", "translit"),
+    "Db Eb F Gb Ab Bb C",
+  );
+}
+
 // --- Translation -------------------------------------------------------------
 // Every string a question shows must actually be in the chosen language. This
 // is how 921 English strings survived behind a translated interface: the

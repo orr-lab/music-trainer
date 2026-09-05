@@ -372,3 +372,30 @@ export const INTERVAL_NOTES: Record<string, Phrase> = {
 export function intervalNote(id: string, lang: Lang): string {
   return INTERVAL_NOTES[id]?.[lang] ?? "";
 }
+
+/** Scale degrees, named with the interval vocabulary they share. */
+export const DEGREE_NAMES: Record<number, Phrase> = {
+  2: { translit: "sekunda", he: "סקונדה", en: "2nd" },
+  3: { translit: "terza", he: "טרצה", en: "3rd" },
+  4: { translit: "kvarta", he: "קוורטה", en: "4th" },
+  5: { translit: "kvinta", he: "קווינטה", en: "5th" },
+  6: { translit: "sexta", he: "סקסטה", en: "6th" },
+  7: { translit: "septima", he: "ספטימה", en: "7th" },
+};
+
+export function degreeName(degree: number, lang: Lang): string {
+  return DEGREE_NAMES[degree]?.[lang] ?? String(degree);
+}
+
+MODE_NAMES.scales = {
+  name: {
+    translit: "Sulamot mazhoriyim",
+    he: "סולמות מז'וריים",
+    en: "Major scales",
+  },
+  blurb: {
+    translit: "The notes of every major scale, degree by degree.",
+    he: "הצלילים של כל סולם מז'ורי, דרגה אחרי דרגה.",
+    en: "The notes of every major scale, degree by degree.",
+  },
+};

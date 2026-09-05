@@ -143,6 +143,12 @@ export interface Copy {
     placedCount: (n: number, total: number) => string;
     howItLooks: string;
     orJoin: string;
+    whichDegree: (degree: string) => string;
+    degreeLabel: string;
+    isItInScale: (note: string) => string;
+    inScaleLabel: string;
+    yes: string;
+    no: string;
   };
 }
 
@@ -296,6 +302,12 @@ const translit: Copy = {
     placedCount: (n, t) => `${n} of ${t} placed`,
     howItLooks: "How it should look:",
     orJoin: " or ",
+    whichDegree: (d) => `which note is the ${d}?`,
+    degreeLabel: "Note",
+    isItInScale: (n) => `is ${n} in it?`,
+    inScaleLabel: "In the scale",
+    yes: "Yes",
+    no: "No",
   },
 };
 
@@ -448,6 +460,12 @@ const he: Copy = {
     placedCount: (n, t) => `${n} מתוך ${t} מוקמו`,
     howItLooks: "כך זה צריך להיראות:",
     orJoin: " או ",
+    whichDegree: (d) => `איזה צליל הוא ה${d}?`,
+    degreeLabel: "צליל",
+    isItInScale: (n) => `האם ${n} נמצא בו?`,
+    inScaleLabel: "בסולם",
+    yes: "כן",
+    no: "לא",
   },
 };
 

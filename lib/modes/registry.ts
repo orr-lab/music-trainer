@@ -5,6 +5,7 @@ import { intervalsMode } from "./intervals";
 import { keysMode } from "./keys";
 import { notesMode } from "./notes";
 import { placeNoteMode } from "./place-note";
+import { scalesMode } from "./scales";
 import { semitonesMode } from "./semitones";
 import { signaturesMode } from "./signatures";
 import { writeSignatureMode } from "./write-signature";
@@ -16,6 +17,7 @@ export const MODES: Mode[] = [
   notesMode,
   placeNoteMode,
   buildMode,
+  scalesMode,
   keysMode,
   signaturesMode,
   writeSignatureMode,

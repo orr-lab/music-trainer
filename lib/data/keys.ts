@@ -206,6 +206,30 @@ export function signatureSlots(
   return steps.map((s) => s + offset);
 }
 
+/**
+ * The seven notes of a major scale, ascending from its tonic.
+ *
+ * Derived from the key signature rather than stored: a scale IS its signature
+ * applied to the seven letters, and deriving it here means the two can never
+ * disagree - which is also the thing worth learning about them.
+ */
+export function scaleNotes(key: KeyRow): Tonic[] {
+  const marks = signature(key);
+  const start = LETTER_ORDER.indexOf(key.tonic.letter);
+  return Array.from({ length: 7 }, (_, i) => {
+    const letter = LETTER_ORDER[(start + i) % 7];
+    const altered = marks.find((m) => m.letter === letter);
+    return { letter, accidental: altered ? altered.accidental : "" };
+  });
+}
+
+/** The scale written out: "re mi fa diez sol la si do diez". */
+export function scaleText(key: KeyRow, naming: Naming, lang: Lang): string {
+  return scaleNotes(key)
+    .map((n) => tonicName(n, naming, lang))
+    .join(" ");
+}
+
 export function keyById(id: string): KeyRow | undefined {
   return KEYS.find((k) => k.id === id);
 }

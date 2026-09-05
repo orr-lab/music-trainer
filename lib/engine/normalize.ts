@@ -10,7 +10,10 @@ export function normalize(raw: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/♯/g, "#")
     .replace(/♭/g, "b")
-    .replace(/[^a-z0-9#.\/-]+/g, " ")
+    // Letters and digits of ANY script. The old class was [a-z0-9...], which
+    // deleted every Hebrew character - so a Hebrew answer normalised to the
+    // empty string and could never be graded correct.
+    .replace(/[^\p{L}\p{N}#./-]+/gu, " ")
     .trim()
     .replace(/\s+/g, " ");
 }
